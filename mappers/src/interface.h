@@ -16,10 +16,13 @@
 #include	<windows.h>
 #include	<tchar.h>
 
+// rveach: eclipse doesn't understand pragma
+#ifdef _MSC_VER
 #pragma warning(disable:4100)	// "unreferenced formal parameter" - functions which don't use every parameter
 #pragma warning(disable:4127)	// "conditional expression is constant" - do {} while (0)
 #pragma warning(disable:4201)	// "nonstandard extension used : nameless struct/union" - used in lots of places
 #pragma warning(disable:4244)	// "conversion from 'foo' to 'bar', possible loss of data" - I/O handlers all pass 'int' values and get crammed into bytes/shorts
+#endif
 
 #define	MSGBOX_FLAGS	(MB_OK | MB_ICONERROR | MB_DEFBUTTON1 | MB_APPLMODAL)
 
@@ -33,7 +36,8 @@
 
 /* Integer types */
 
-#if MSC_VER >= 1600
+// rveach: eclipse also supports stdint
+#if MSC_VER >= 1600 || defined(__GNUC__)
 #include <stdint.h>
 #else
 typedef	signed __int8		int8_t;
@@ -220,9 +224,10 @@ enum CFG_TYPE	{ CFG_WINDOW, CFG_QUERY, CFG_CMD };
 struct	MapperInfo
 {
 /* Mapper Information */
-	void *		MapperId;
-	TCHAR *		Description;
-	COMPAT_TYPE	Compatibility;
+// rveach: eclipse couldn't assign const void* to void*
+	const void *	MapperId;
+	TCHAR *			Description;
+	COMPAT_TYPE		Compatibility;
 
 /* Mapper Functions */
 	BOOL		(MAPINT *Load)		(void);
@@ -357,6 +362,9 @@ inline void SAVELOAD_LONG(STATE_TYPE mode, int &offset, unsigned char *data, int
 {
 	uint32_t _value = value;	SAVELOAD_LONG(mode, offset, data, _value);	value = _value;
 }
+// rveach: eclipse sees int32_t/long and uint32_t/unsignedlong as the same
+// but sees it as different for long int and long unsigned int
+#ifdef _MSC_VER
 inline void SAVELOAD_LONG(STATE_TYPE mode, int &offset, unsigned char *data, long &value)
 {
 	uint32_t _value = value;	SAVELOAD_LONG(mode, offset, data, _value);	value = _value;
@@ -365,3 +373,13 @@ inline void SAVELOAD_LONG(STATE_TYPE mode, int &offset, unsigned char *data, uns
 {
 	uint32_t _value = value;	SAVELOAD_LONG(mode, offset, data, _value);	value = _value;
 }
+#else
+inline void SAVELOAD_LONG(STATE_TYPE mode, int &offset, unsigned char *data, long int &value)
+{
+	uint32_t _value = value;	SAVELOAD_LONG(mode, offset, data, _value);	value = _value;
+}
+inline void SAVELOAD_LONG(STATE_TYPE mode, int &offset, unsigned char *data, long unsigned int &value)
+{
+	uint32_t _value = value;	SAVELOAD_LONG(mode, offset, data, _value);	value = _value;
+}
+#endif

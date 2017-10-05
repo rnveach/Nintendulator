@@ -12,7 +12,8 @@ namespace
 {
 void	Sync (void)
 {
-	union
+	// rveach: eclipse doesn't support anonymous unions with anonymous structs
+	union temp_union
 	{
 		struct
 		{
@@ -32,19 +33,20 @@ void	Sync (void)
 			unsigned data    : 8;
 		};
 	};
-	addr = Latch::Addr.s0;
-	data = Latch::Data;
+	temp_union temp_var;
+	temp_var.addr = Latch::Addr.s0;
+	temp_var.data = Latch::Data;
 
-	EMU->SetCHR_ROM8(0, (CHRhi << 2) | CHRlo);
+	EMU->SetCHR_ROM8(0, (temp_var.CHRhi << 2) | temp_var.CHRlo);
 
-	if (PRGsize)
+	if (temp_var.PRGsize)
 	{
-		EMU->SetPRG_ROM16(0x8, (PRGchip << 6) | PRG);
-		EMU->SetPRG_ROM16(0xC, (PRGchip << 6) | PRG);
+		EMU->SetPRG_ROM16(0x8, (temp_var.PRGchip << 6) | temp_var.PRG);
+		EMU->SetPRG_ROM16(0xC, (temp_var.PRGchip << 6) | temp_var.PRG);
 	}
-	else	EMU->SetPRG_ROM32(0x8, ((PRGchip << 6) | PRG) >> 1);
+	else	EMU->SetPRG_ROM32(0x8, ((temp_var.PRGchip << 6) | temp_var.PRG) >> 1);
 
-	if (Mir_HV)
+	if (temp_var.Mir_HV)
 		EMU->Mirror_H();
 	else	EMU->Mirror_V();
 }

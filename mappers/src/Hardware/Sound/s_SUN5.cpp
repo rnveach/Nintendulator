@@ -46,7 +46,8 @@ struct	SUN5sqr
 	}
 } Sqr[3];
 
-static union
+// rveach: eclipse doesn't support anonymous unions with anonymous structs
+union temp_union
 {
 	struct
 	{
@@ -68,12 +69,13 @@ static union
 		uint8_t byteD;
 	};
 };
+temp_union temp_var;
 uint8_t select;
 
 void	Load (void)
 {
 	ZeroMemory(Sqr, sizeof(Sqr));
-	byte7 = byteB = byteC = byteD = 0;
+	temp_var.byte7 = temp_var.byteB = temp_var.byteC = temp_var.byteD = 0;
 	select = 0;
 }
 
@@ -101,13 +103,13 @@ void	Write (int Addr, int Val)
 			case 0x3:	Sqr[1].byte1 = Val;	break;
 			case 0x4:	Sqr[2].byte0 = Val;	break;
 			case 0x5:	Sqr[2].byte1 = Val;	break;
-			case 0x7:	byte7 = Val;	break;
+			case 0x7:	temp_var.byte7 = Val;	break;
 			case 0x8:	Sqr[0].byte2 = Val;	break;
 			case 0x9:	Sqr[1].byte2 = Val;	break;
 			case 0xA:	Sqr[2].byte2 = Val;	break;
-			case 0xB:	byteB = Val;	break;
-			case 0xC:	byteC = Val;	break;
-			case 0xD:	byteD = Val;	break;
+			case 0xB:	temp_var.byteB = Val;	break;
+			case 0xC:	temp_var.byteC = Val;	break;
+			case 0xD:	temp_var.byteD = Val;	break;
 			}				break;
 	}
 }
@@ -115,9 +117,9 @@ void	Write (int Addr, int Val)
 int	MAPINT	Get (int Cycles)
 {
 	int z = 0;
-	if (!(tone & 1))	z += Sqr[0].Generate(Cycles);
-	if (!(tone & 2))	z += Sqr[1].Generate(Cycles);
-	if (!(tone & 4))	z += Sqr[2].Generate(Cycles);
+	if (!(temp_var.tone & 1))	z += Sqr[0].Generate(Cycles);
+	if (!(temp_var.tone & 2))	z += Sqr[1].Generate(Cycles);
+	if (!(temp_var.tone & 4))	z += Sqr[2].Generate(Cycles);
 	return z << 6;
 }
 
@@ -139,10 +141,10 @@ int	MAPINT	SaveLoad (STATE_TYPE mode, int offset, unsigned char *data)
 	SAVELOAD_BYTE(mode, offset, data, Sqr[2].byte2);
 	SAVELOAD_BYTE(mode, offset, data, Sqr[2].CurP);
 	SAVELOAD_LONG(mode, offset, data, Sqr[2].LCtr);
-	SAVELOAD_BYTE(mode, offset, data, byte7);
-	SAVELOAD_BYTE(mode, offset, data, byteB);
-	SAVELOAD_BYTE(mode, offset, data, byteC);
-	SAVELOAD_BYTE(mode, offset, data, byteD);
+	SAVELOAD_BYTE(mode, offset, data, temp_var.byte7);
+	SAVELOAD_BYTE(mode, offset, data, temp_var.byteB);
+	SAVELOAD_BYTE(mode, offset, data, temp_var.byteC);
+	SAVELOAD_BYTE(mode, offset, data, temp_var.byteD);
 	return offset;
 }
 } // namespace SUN5sound

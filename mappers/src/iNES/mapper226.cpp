@@ -13,7 +13,8 @@ uint8_t Reg0, Reg1;
 
 void	Sync (void)
 {
-	union
+	// rveach: eclipse doesn't support anonymous unions with anonymous structs
+	union temp_union
 	{
 		struct
 		{
@@ -29,19 +30,20 @@ void	Sync (void)
 			unsigned byte1   : 8;
 		};
 	};
+	temp_union temp_var;
 
-	byte0 = Reg0;
-	byte1 = Reg1;
+	temp_var.byte0 = Reg0;
+	temp_var.byte1 = Reg1;
 
-	if (Mir_VH)
+	if (temp_var.Mir_VH)
 		EMU->Mirror_V();
 	else	EMU->Mirror_H();
-	if (PRGsize)
+	if (temp_var.PRGsize)
 	{
-		EMU->SetPRG_ROM16(0x8, (PRGhi << 5) | PRGbank);
-		EMU->SetPRG_ROM16(0xC, (PRGhi << 5) | PRGbank);
+		EMU->SetPRG_ROM16(0x8, (temp_var.PRGhi << 5) | temp_var.PRGbank);
+		EMU->SetPRG_ROM16(0xC, (temp_var.PRGhi << 5) | temp_var.PRGbank);
 	}
-	else	EMU->SetPRG_ROM32(0x8, (PRGhi << 4) | (PRGbank >> 1));
+	else	EMU->SetPRG_ROM32(0x8, (temp_var.PRGhi << 4) | (temp_var.PRGbank >> 1));
 	EMU->SetCHR_RAM8(0x0, 0);
 }
 

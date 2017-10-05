@@ -1,0 +1,38 @@
+# eclipse files
+
+eclipse/fds/.settings
+eclipse/ines/.settings
+eclipse/nsf/.settings
+eclipse/unif/.settings
+eclipse/vs/.settings
+
+# visual studio files
+
+msvc6/*.ncb
+msvc6/*.opt
+msvc6/*.plg
+msvc150/.vs
+msvc150/Win32
+
+# build files
+
+eclipse/fds/Debug Win32 ANSI/
+eclipse/fds/Release Win32 ANSI/
+eclipse/fds/Debug Win32 Unicode/
+eclipse/fds/Release Win32 Unicode/
+eclipse/ines/Debug Win32 ANSI/
+eclipse/ines/Release Win32 ANSI/
+eclipse/ines/Debug Win32 Unicode/
+eclipse/ines/Release Win32 Unicode/
+eclipse/nsf/Debug Win32 ANSI/
+eclipse/nsf/Release Win32 ANSI/
+eclipse/nsf/Debug Win32 Unicode/
+eclipse/nsf/Release Win32 Unicode/
+eclipse/unif/Debug Win32 ANSI/
+eclipse/unif/Release Win32 ANSI/
+eclipse/unif/Debug Win32 Unicode/
+eclipse/unif/Release Win32 Unicode/
+eclipse/vs/Debug Win32 ANSI/
+eclipse/vs/Release Win32 ANSI/
+eclipse/vs/Debug Win32 Unicode/
+eclipse/vs/Release Win32 Unicode/

@@ -12,7 +12,8 @@ namespace
 {
 void	Sync (void)
 {
-	union
+	// rveach: eclipse doesn't support anonymous unions with anonymous structs
+	union temp_union
 	{
 		struct
 		{
@@ -27,20 +28,22 @@ void	Sync (void)
 		};
 		uint16_t addr;
 	};
-	addr = Latch::Addr.s0;
+	temp_union temp_var;
 
-	if (Mir_HV)
+	temp_var.addr = Latch::Addr.s0;
+
+	if (temp_var.Mir_HV)
 		EMU->Mirror_H();
 	else	EMU->Mirror_V();
-	if (PRGsize) 
-		EMU->SetPRG_ROM32(0x8, (PRGchip << 4) | (PRGbank));
+	if (temp_var.PRGsize)
+		EMU->SetPRG_ROM32(0x8, (temp_var.PRGchip << 4) | (temp_var.PRGbank));
 	else
 	{
-		EMU->SetPRG_ROM16(0x8, (PRGchip << 5) | (PRGbank << 1) | (PRG16));
-		EMU->SetPRG_ROM16(0xC, (PRGchip << 5) | (PRGbank << 1) | (PRG16));
+		EMU->SetPRG_ROM16(0x8, (temp_var.PRGchip << 5) | (temp_var.PRGbank << 1) | (temp_var.PRG16));
+		EMU->SetPRG_ROM16(0xC, (temp_var.PRGchip << 5) | (temp_var.PRGbank << 1) | (temp_var.PRG16));
 	}
 
-	if (CHRprot)
+	if (temp_var.CHRprot)
 	{
 		for (int i = 0; i < 8; i++)
 		{
@@ -50,9 +53,9 @@ void	Sync (void)
 	}
 	else
 	{	EMU->SetCHR_RAM8(0, 0);
-		if (LastBank)
-			EMU->SetPRG_ROM16(0xC, (PRGchip << 5) | (PRGbank << 1) |  7);
-		else	EMU->SetPRG_ROM16(0xC, (PRGchip << 5) | (PRGbank << 1) & ~7);
+		if (temp_var.LastBank)
+			EMU->SetPRG_ROM16(0xC, (temp_var.PRGchip << 5) | (temp_var.PRGbank << 1) |  7);
+		else	EMU->SetPRG_ROM16(0xC, (temp_var.PRGchip << 5) | (temp_var.PRGbank << 1) & ~7);
 	}
 }
 
