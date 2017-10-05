@@ -1,0 +1,53 @@
+/* Nintendulator Mapper DLLs
+ * Copyright (C) QMT Productions
+ *
+ * $URL: file:///svn/p/nintendulator/code/mappers/trunk/src/iNES/mapper010.cpp $
+ * $Id: mapper010.cpp 1355 2017-09-23 17:47:18Z quietust $
+ */
+
+#include	"..\DLL\d_iNES.h"
+#include	"..\Hardware\h_MMC4.h"
+
+namespace
+{
+void	Sync (void)
+{
+	MMC4::SyncPRG(0xF, 0);
+	MMC4::SyncCHR();
+	MMC4::SyncMirror();
+	EMU->SetPRG_RAM8(0x6, 0);
+}
+
+BOOL	MAPINT	Load (void)
+{
+	MMC4::Load(Sync);
+	iNES_SetSRAM();
+	return TRUE;
+}
+void	MAPINT	Reset (RESET_TYPE ResetType)
+{
+	iNES_SetMirroring();
+	MMC4::Reset(ResetType);
+}
+void	MAPINT	Unload (void)
+{
+	MMC4::Unload();
+}
+
+uint16_t MapperNum = 10;
+} // namespace
+
+const MapperInfo MapperInfo_010 =
+{
+	&MapperNum,
+	_T("MMC4"),
+	COMPAT_FULL,
+	Load,
+	Reset,
+	Unload,
+	NULL,
+	NULL,
+	MMC4::SaveLoad,
+	NULL,
+	NULL
+};

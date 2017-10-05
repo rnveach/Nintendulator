@@ -1,0 +1,86 @@
+/* Nintendulator Mapper DLLs
+ * Copyright (C) QMT Productions
+ *
+ * $URL: file:///svn/p/nintendulator/code/mappers/trunk/src/UNIF/NES/NES_JxROM.cpp $
+ * $Id: NES_JxROM.cpp 1352 2017-09-23 00:20:15Z quietust $
+ */
+
+#include	"..\..\DLL\d_UNIF.h"
+#include	"..\..\Hardware\h_FME7.h"
+
+namespace
+{
+void	Sync_JLROM (void)
+{
+	FME7::SyncPRG(0x3F, 0);
+	FME7::SyncCHR(0xFF, 0);
+	FME7::SyncMirror();
+}
+void	Sync_JSROM (void)
+{
+	FME7::SyncPRG(0x3F, 0);
+	FME7::SyncCHR(0xFF, 0);
+	FME7::SyncMirror();
+}
+
+BOOL	MAPINT	Load_JLROM (void)
+{
+	FME7::Load(Sync_JLROM);
+	return TRUE;
+}
+BOOL	MAPINT	Load_JSROM (void)
+{
+	FME7::Load(Sync_JSROM);
+	return TRUE;
+}
+void	MAPINT	Reset (RESET_TYPE ResetType)
+{
+	FME7::Reset(ResetType);
+}
+void	MAPINT	Unload (void)
+{
+	FME7::Unload();
+}
+} // namespace
+
+const MapperInfo MapperInfo_NES_JLROM =
+{
+	"NES-JLROM",
+	_T("Sunsoft FME-7"),
+	COMPAT_FULL,
+	Load_JLROM,
+	Reset,
+	Unload,
+	FME7::CPUCycle,
+	NULL,
+	FME7::SaveLoad,
+	FME7::GenSound,
+	NULL
+};
+const MapperInfo MapperInfo_NES_JSROM =
+{
+	"NES-JSROM",
+	_T("Sunsoft FME-7 with WRAM"),
+	COMPAT_FULL,
+	Load_JSROM,
+	Reset,
+	Unload,
+	FME7::CPUCycle,
+	NULL,
+	FME7::SaveLoad,
+	FME7::GenSound,
+	NULL
+};const MapperInfo MapperInfo_NES_BTR =
+{
+	"NES-BTR",
+	_T("Sunsoft FME-7 with WRAM (NES-JSROM)"),
+	COMPAT_FULL,
+	Load_JSROM,
+	Reset,
+	Unload,
+	FME7::CPUCycle,
+	NULL,
+	FME7::SaveLoad,
+	FME7::GenSound,
+	NULL
+};
