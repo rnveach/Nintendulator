@@ -76,7 +76,8 @@ DEF_STDCONT(FourScore2)
 #undef DEF_STDCONT
 
 void	StdPort_SetControllerType (StdPort *&, STDCONT_TYPE, DWORD *);
-#define SET_STDCONT(PORT,TYPE) StdPort_SetControllerType(PORT, TYPE, PORT##_Buttons)
+// rveach: needed 'Controllers::' for msvc 6
+#define SET_STDCONT(PORT,TYPE) Controllers::StdPort_SetControllerType(PORT, TYPE, PORT##_Buttons)
 extern const TCHAR	*StdPort_Mappings[STD_MAX];
 
 enum	EXPCONT_TYPE
@@ -135,7 +136,8 @@ DEF_EXPCONT(Tablet)
 #undef DEF_EXPCONT
 
 void	ExpPort_SetControllerType (ExpPort *&, EXPCONT_TYPE, DWORD *);
-#define SET_EXPCONT(PORT,TYPE) ExpPort_SetControllerType(PORT, TYPE, PORT##_Buttons)
+// rveach: needed 'Controllers::' for msvc 6
+#define SET_EXPCONT(PORT,TYPE) Controllers::ExpPort_SetControllerType(PORT, TYPE, PORT##_Buttons)
 extern const TCHAR	*ExpPort_Mappings[EXP_MAX];
 
 enum	JOY_AXIS	{ AXIS_X, AXIS_Y, AXIS_Z, AXIS_RX, AXIS_RY, AXIS_RZ, AXIS_S0, AXIS_S1 };

@@ -1,4 +1,12 @@
 # visual studio files
 
+msvc6/*.ncb
+msvc6/*.opt
+msvc6/*.plg
 msvc150/.vs
 msvc150/Win32
+
+# build files
+
+ansi/
+unicode/

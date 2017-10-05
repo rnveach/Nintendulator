@@ -689,12 +689,12 @@ void	SaveSettings (HKEY SettingsBase)
 	BYTE *buf = new BYTE[buflen], *b = buf;
 
 	memcpy(b, &numDevsUsed, sizeof(DWORD)); b += sizeof(DWORD);
-	for (DWORD i = 0; i < MAX_CONTROLLERS; i++)
+	for (DWORD j = 0; j < MAX_CONTROLLERS; j++)
 	{
-		if (!DeviceUsed[i])
+		if (!DeviceUsed[j])
 			continue;
-		memcpy(b, &i, sizeof(DWORD)); b += sizeof(DWORD);
-		memcpy(b, &DeviceGUID[i], sizeof(GUID)); b += sizeof(GUID);
+		memcpy(b, &j, sizeof(DWORD)); b += sizeof(DWORD);
+		memcpy(b, &DeviceGUID[j], sizeof(GUID)); b += sizeof(GUID);
 	}
 
 	RegSetValueEx(SettingsBase, _T("UDLR")    , 0, REG_DWORD, (LPBYTE)&EnableOpposites, sizeof(BOOL));
@@ -769,10 +769,10 @@ void	LoadSettings (HKEY SettingsBase)
 		memcpy(&mapLen, buf, sizeof(DWORD)); b += sizeof(DWORD);
 		DWORD *map_nums = new DWORD[mapLen];
 		GUID *map_guids = new GUID[mapLen];
-		for (size_t i = 0; i < mapLen; i++)
+		for (size_t s = 0; s < mapLen; s++)
 		{
-			memcpy(&map_nums[i], b, sizeof(DWORD)); b += sizeof(DWORD);
-			memcpy(&map_guids[i], b, sizeof(GUID)); b += sizeof(GUID);
+			memcpy(&map_nums[s], b, sizeof(DWORD)); b += sizeof(DWORD);
+			memcpy(&map_guids[s], b, sizeof(GUID)); b += sizeof(GUID);
 		}
 		
 		int Lens[7] = { Port1->NumButtons, Port2->NumButtons, FSPort1->NumButtons, FSPort2->NumButtons, FSPort3->NumButtons, FSPort4->NumButtons, PortExp->NumButtons };
