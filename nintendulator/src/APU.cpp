@@ -21,8 +21,11 @@
 # include "AVI.h"
 # include "Controllers.h"
 
+// rveach: eclipse doesn't understand pragma
+#ifdef _MSC_VER
 # pragma comment(lib, "dsound.lib")
 # pragma comment(lib, "dxguid.lib")
+#endif
 #endif	/* NSFPLAYER */
 
 #define	SOUND_FILTERING

@@ -16,6 +16,8 @@
 #include "AVI.h"
 #include <commctrl.h>
 
+// rveach: eclipse doesn't understand pragma
+#ifdef _MSC_VER
 #if (_MSC_VER < 1400)
 // newer versions of the DirectX SDK helpfully fail to include ddraw.lib
 // and those newer versions can only be used in Visual Studio 2005 and later
@@ -24,6 +26,7 @@
 #pragma comment(lib, "ddraw.lib")
 #endif
 #pragma comment(lib, "dxguid.lib")
+#endif
 
 #define	_USE_MATH_DEFINES
 #include <math.h>

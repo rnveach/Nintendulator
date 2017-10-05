@@ -38,8 +38,11 @@
 #include "HeaderEdit.h"
 #include <shellapi.h>
 
+// rveach: eclipse doesn't understand pragma
+#ifdef _MSC_VER
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "winmm.lib")
+#endif
 
 #define MAX_LOADSTRING 100
 

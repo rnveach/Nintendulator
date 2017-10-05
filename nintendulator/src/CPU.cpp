@@ -102,13 +102,19 @@ unsigned char	MemGet (unsigned int Addr)
 		}
 
 		// Dummy read
-		skipRead ? RunCycle() : MemGet(Addr);
+		if (skipRead)
+			RunCycle();
+		else
+			MemGet(Addr);
 		skipRead = isController;
 
 		// Alignment read
 		if (APU::InternalClock & 1)
 		{
-			skipRead ? RunCycle() : MemGet(Addr);
+			if (skipRead)
+				RunCycle();
+			else
+				MemGet(Addr);
 			skipRead = isController;
 		}
 

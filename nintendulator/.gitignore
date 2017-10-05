@@ -1,3 +1,7 @@
+# eclipse files
+
+eclipse/.settings
+
 # visual studio files
 
 msvc6/*.ncb
@@ -10,3 +14,9 @@ msvc150/Win32
 
 ansi/
 unicode/
+
+eclipse/Debug Win32 ANSI/
+eclipse/Release Win32 ANSI/
+eclipse/Debug Win32 Unicode/
+eclipse/Release Win32 Unicode/
+eclipse/Resources

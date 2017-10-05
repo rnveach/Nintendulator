@@ -22,7 +22,10 @@
 #include "Genie.h"
 #include <shellapi.h>
 
+// rveach: eclipse doesn't understand pragma
+#ifdef _MSC_VER
 #pragma comment(lib, "shlwapi.lib")
+#endif
 
 namespace NES
 {

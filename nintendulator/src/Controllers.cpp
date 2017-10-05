@@ -13,8 +13,11 @@
 #include "Controllers.h"
 #include <commdlg.h>
 
+// rveach: eclipse doesn't understand pragma
+#ifdef _MSC_VER
 #pragma comment(lib, "dinput8.lib")
 #pragma comment(lib, "dxguid.lib")
+#endif
 
 namespace Controllers
 {
