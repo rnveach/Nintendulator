@@ -19,7 +19,7 @@
 //const MapperInfo MapperInfo_009 = {	NULL,	_T("Mapper 9"),		COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
 //const MapperInfo MapperInfo_010 = {	NULL,	_T("Mapper 10"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
 //const MapperInfo MapperInfo_011 = {	NULL,	_T("Mapper 11"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
-  const MapperInfo MapperInfo_012 = {	NULL,	_T("Mapper 12"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
+//const MapperInfo MapperInfo_012 = {	NULL,	_T("Mapper 12"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
 //const MapperInfo MapperInfo_013 = {	NULL,	_T("Mapper 13"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
   const MapperInfo MapperInfo_014 = {	NULL,	_T("Mapper 14"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
 //const MapperInfo MapperInfo_015 = {	NULL,	_T("Mapper 15"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
@@ -46,7 +46,7 @@
 //const MapperInfo MapperInfo_036 = {	NULL,	_T("Mapper 36"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
 //const MapperInfo MapperInfo_037 = {	NULL,	_T("Mapper 37"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
 //const MapperInfo MapperInfo_038 = {	NULL,	_T("Mapper 38"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
-  const MapperInfo MapperInfo_039 = {	NULL,	_T("Mapper 39"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
+//const MapperInfo MapperInfo_039 = {	NULL,	_T("Mapper 39"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
 //const MapperInfo MapperInfo_040 = {	NULL,	_T("Mapper 40"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
 //const MapperInfo MapperInfo_041 = {	NULL,	_T("Mapper 41"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
 //const MapperInfo MapperInfo_042 = {	NULL,	_T("Mapper 42"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
@@ -61,7 +61,7 @@
 //const MapperInfo MapperInfo_051 = {	NULL,	_T("Mapper 51"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
 //const MapperInfo MapperInfo_052 = {	NULL,	_T("Mapper 52"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
 //const MapperInfo MapperInfo_053 = {	NULL,	_T("Mapper 53"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
-  const MapperInfo MapperInfo_054 = {	NULL,	_T("Mapper 54"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
+//const MapperInfo MapperInfo_054 = {	NULL,	_T("Mapper 54"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
   const MapperInfo MapperInfo_055 = {	NULL,	_T("Mapper 55"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
 //const MapperInfo MapperInfo_056 = {	NULL,	_T("Mapper 56"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
 //const MapperInfo MapperInfo_057 = {	NULL,	_T("Mapper 57"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
@@ -194,7 +194,7 @@
 //const MapperInfo MapperInfo_184 = {	NULL,	_T("Mapper 184"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
 //const MapperInfo MapperInfo_185 = {	NULL,	_T("Mapper 185"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
   const MapperInfo MapperInfo_186 = {	NULL,	_T("Mapper 186"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
-  const MapperInfo MapperInfo_187 = {	NULL,	_T("Mapper 187"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
+//const MapperInfo MapperInfo_187 = {	NULL,	_T("Mapper 187"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
 //const MapperInfo MapperInfo_188 = {	NULL,	_T("Mapper 188"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
 //const MapperInfo MapperInfo_189 = {	NULL,	_T("Mapper 189"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
   const MapperInfo MapperInfo_190 = {	NULL,	_T("Mapper 190"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
@@ -219,7 +219,7 @@
 //const MapperInfo MapperInfo_209 = {	NULL,	_T("Mapper 209"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
 //const MapperInfo MapperInfo_210 = {	NULL,	_T("Mapper 210"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
 //const MapperInfo MapperInfo_211 = {	NULL,	_T("Mapper 211"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
-  const MapperInfo MapperInfo_212 = {	NULL,	_T("Mapper 212"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
+//const MapperInfo MapperInfo_212 = {	NULL,	_T("Mapper 212"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
   const MapperInfo MapperInfo_213 = {	NULL,	_T("Mapper 213"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
   const MapperInfo MapperInfo_214 = {	NULL,	_T("Mapper 214"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};
   const MapperInfo MapperInfo_215 = {	NULL,	_T("Mapper 215"),	COMPAT_NONE,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL	};

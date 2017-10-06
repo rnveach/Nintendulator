@@ -180,6 +180,11 @@
 			<locationURI>PARENT-2-PROJECT_LOC/src/iNES/mapper011.cpp</locationURI>
 		</link>
 		<link>
+			<name>src/mapper012.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/src/iNES/mapper012.cpp</locationURI>
+		</link>
+		<link>
 			<name>src/mapper013.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/src/iNES/mapper013.cpp</locationURI>
@@ -275,6 +280,11 @@
 			<locationURI>PARENT-2-PROJECT_LOC/src/iNES/mapper038.cpp</locationURI>
 		</link>
 		<link>
+			<name>src/mapper039.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/src/iNES/mapper039.cpp</locationURI>
+		</link>
+		<link>
 			<name>src/mapper040.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/src/iNES/mapper040.cpp</locationURI>
@@ -343,6 +353,11 @@
 			<name>src/mapper053.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/src/iNES/mapper053.cpp</locationURI>
+		</link>
+		<link>
+			<name>src/mapper054.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/src/iNES/mapper054.cpp</locationURI>
 		</link>
 		<link>
 			<name>src/mapper056.cpp</name>
@@ -735,6 +750,11 @@
 			<locationURI>PARENT-2-PROJECT_LOC/src/iNES/mapper185.cpp</locationURI>
 		</link>
 		<link>
+			<name>src/mapper187.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/src/iNES/mapper187.cpp</locationURI>
+		</link>
+		<link>
 			<name>src/mapper188.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/src/iNES/mapper188.cpp</locationURI>
@@ -793,6 +813,11 @@
 			<name>src/mapper207.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/src/iNES/mapper207.cpp</locationURI>
+		</link>
+		<link>
+			<name>src/mapper212.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/src/iNES/mapper212.cpp</locationURI>
 		</link>
 		<link>
 			<name>src/mapper225.cpp</name>
