@@ -572,6 +572,17 @@ LRESULT CALLBACK	WndProc (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			else	CheckMenuItem(hMenu, ID_DEBUG_STATWND, MF_UNCHECKED);
 			ShowWindow(hDebug, dbgVisible ? SW_SHOW : SW_HIDE);
 			break;
+		///////////////////////
+		//rveach: extra options
+
+		case ID_PPU_NOSPRITES:
+			// allow turning sprites on and off
+			PPU::NoSprites = !PPU::NoSprites;
+
+			CheckMenuItem(hMenu, wmId, (PPU::NoSprites ? MF_CHECKED : MF_UNCHECKED));
+			break;
+
+		///////////////////////
 		case ID_GAME:
 			NES::MapperConfig();
 			break;

@@ -381,6 +381,10 @@
 #define ID_FILE_BROWSESAVES             32825
 #define ID_CPU_BADOPS                   32826
 #define ID_PPU_MODE_DENDY               32827
+
+// rveach: extra resources
+#define ID_PPU_NOSPRITES                40000
+
 #define IDC_STATIC                      -1
 
 // Next default values for new objects

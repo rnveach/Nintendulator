@@ -62,6 +62,9 @@ unsigned short	DrawArray[256*240];
 
 unsigned char VsSecurity;
 
+// rveach: allow turning sprites on and off
+BOOL NoSprites = FALSE;
+
 const	unsigned char	ReverseCHR[256] =
 {
 	0x00,0x80,0x40,0xC0,0x20,0xA0,0x60,0xE0,0x10,0x90,0x50,0xD0,0x30,0xB0,0x70,0xF0,
@@ -830,7 +833,9 @@ __inline void	RunNoSkip (int NumTicks)
 							Reg2002 |= 0x40;	// Sprite 0 hit
 							Spr0InLine = FALSE;
 						}
-						if (!((TC & 0x3) && (SprData[y >> 2][8] & 0x20)))
+
+						// rveach: allow turning sprites on and off
+						if ((!NoSprites) && !((TC & 0x3) && (SprData[y >> 2][8] & 0x20)))
 							TC = SprDat | 0x10;
 						break;
 					}
