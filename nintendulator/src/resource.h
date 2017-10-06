@@ -384,6 +384,8 @@
 
 // rveach: extra resources
 #define ID_PPU_NOSPRITES                40000
+#define IDD_ARCHIVE                     40001
+#define IDC_ARCHIVE_LIST                40002
 
 #define IDC_STATIC                      -1
 

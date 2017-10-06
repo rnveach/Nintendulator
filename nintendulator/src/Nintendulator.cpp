@@ -266,8 +266,9 @@ LRESULT CALLBACK	WndProc (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			ofn.lStructSize = sizeof(ofn);
 			ofn.hwndOwner = hMainWnd;
 			ofn.hInstance = hInst;
-			ofn.lpstrFilter =	_T("All supported files (*.NES, *.UNIF, *.UNF, *.FDS, *.NSF)\0")
-							_T("*.NES;*.UNIF;*.UNF;*.FDS;*.NSF\0")
+			// rveach: zip support
+			ofn.lpstrFilter =	_T("All supported files (*.NES, *.UNIF, *.UNF, *.FDS, *.NSF, *.ZIP)\0")
+							_T("*.NES;*.UNIF;*.UNF;*.FDS;*.NSF;*.ZIP\0")
 						_T("iNES ROM Images (*.NES)\0")
 							_T("*.NES\0")
 						_T("Universal NES Interchange Format ROM files (*.UNIF, *.UNF)\0")
@@ -276,6 +277,8 @@ LRESULT CALLBACK	WndProc (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 							_T("*.FDS\0")
 						_T("NES Sound Files (*.NSF)\0")
 							_T("*.NSF\0")
+						_T("ZIP Files (*.ZIP)\0")
+							_T("*.ZIP\0")
 						_T("\0");
 			ofn.lpstrCustomFilter = NULL;
 			ofn.nFilterIndex = 1;

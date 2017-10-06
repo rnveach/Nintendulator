@@ -50,6 +50,10 @@ unsigned char PRG_RAM[MAX_PRGRAM_SIZE][0x1000];
 unsigned char CHR_ROM[MAX_CHRROM_SIZE][0x400];
 unsigned char CHR_RAM[MAX_CHRRAM_SIZE][0x400];
 
+// rveach: zip support
+unzFile zFile;
+char zFname[512];
+
 void	Init (void)
 {
 	SetupDataPath();
@@ -105,27 +109,58 @@ void	OpenFile (TCHAR *filename)
 		CloseFile();
 
 	EI.DbgOut(_T("Loading file '%s'..."), filename);
-	data = _tfopen(filename, _T("rb"));
 
-	if (!data)
+	//rveach: zip support
+	if (!_tcsicmp(filename + len - 4, _T(".ZIP")))
 	{
-		MessageBox(hMainWnd, _T("Unable to open file!"), _T("Nintendulator"), MB_OK | MB_ICONERROR);
-		CloseFile();
-		return;
-	}
+#ifdef UNICODE
+		if (!WideCharToMultiByte(CP_UTF8, NULL, filename, len, zFname, 512, NULL, NULL))
+		{
+			MessageBox(hMainWnd, _T("Failed on registering the file name!"), _T("Nintendulator"), MB_OK | MB_ICONERROR);
+			CloseFile();
+			return;
+		}
 
-	if (!_tcsicmp(filename + len - 4, _T(".NES")))
-		LoadRet = OpenFileiNES(data);
-	else if (!_tcsicmp(filename + len - 4, _T(".NSF")))
-		LoadRet = OpenFileNSF(data);
-	else if (!_tcsicmp(filename + len - 4, _T(".UNF")))
-		LoadRet = OpenFileUNIF(data);
-	else if (!_tcsicmp(filename + len - 5, _T(".UNIF")))
-		LoadRet = OpenFileUNIF(data);
-	else if (!_tcsicmp(filename + len - 4, _T(".FDS")))
-		LoadRet = OpenFileFDS(data);
-	else	LoadRet = _T("File type not recognized!");
-	fclose(data);
+		zFile = unzOpen(zFname);
+#else
+		zFile = unzOpen(filename);
+#endif
+
+		if (!zFile) {
+			MessageBox(hMainWnd, _T("Unable to open file!"), _T("Nintendulator"), MB_OK | MB_ICONERROR);
+			CloseFile();
+			return;
+		}
+
+		LoadRet = OpenFileZIP(&zFile);
+
+		unzClose(zFile);
+	}
+	////////
+	else
+	{
+		data = _tfopen(filename, _T("rb"));
+
+		if (!data)
+		{
+			MessageBox(hMainWnd, _T("Unable to open file!"), _T("Nintendulator"), MB_OK | MB_ICONERROR);
+			CloseFile();
+			return;
+		}
+
+		if (!_tcsicmp(filename + len - 4, _T(".NES")))
+			LoadRet = OpenFileiNES(data, NULL);
+		else if (!_tcsicmp(filename + len - 4, _T(".NSF")))
+			LoadRet = OpenFileNSF(data, NULL);
+		else if (!_tcsicmp(filename + len - 4, _T(".UNF")))
+			LoadRet = OpenFileUNIF(data, NULL);
+		else if (!_tcsicmp(filename + len - 5, _T(".UNIF")))
+			LoadRet = OpenFileUNIF(data, NULL);
+		else if (!_tcsicmp(filename + len - 4, _T(".FDS")))
+			LoadRet = OpenFileFDS(data, NULL);
+		else	LoadRet = _T("File type not recognized!");
+		fclose(data);
+	}
 
 	if (LoadRet)
 	{
@@ -402,12 +437,16 @@ DWORD	getMask (unsigned int maxval)
 	return result;
 }
 
-const TCHAR *	OpenFileiNES (FILE *in)
+const TCHAR *	OpenFileiNES (FILE *in, unzFile *inz)
 {
 	int i;
 	unsigned char Header[16];
 
-	fread(Header, 1, 16, in);
+	if (in) {
+		fread(Header, 1, 16, in);
+	} else {
+		unzReadCurrentFile(*inz, Header, 16);
+	}
 	if (*(unsigned long *)Header != MKID('NES\x1A'))
 		return _T("iNES header signature not found!");
 
@@ -473,8 +512,13 @@ const TCHAR *	OpenFileiNES (FILE *in)
 	if (CHRSizeROM > MAX_CHRROM_SIZE)
 		return _T("CHR ROM is too large! Increase MAX_CHRROM_SIZE and recompile!");
 
-	fread(PRG_ROM, 1, RI.INES_PRGSize * 0x4000, in);
-	fread(CHR_ROM, 1, RI.INES_CHRSize * 0x2000, in);
+	if (in) {
+		fread(PRG_ROM, 1, RI.INES_PRGSize * 0x4000, in);
+		fread(CHR_ROM, 1, RI.INES_CHRSize * 0x2000, in);
+	} else {
+		unzReadCurrentFile(*inz, PRG_ROM, RI.INES_PRGSize * 0x4000);
+		unzReadCurrentFile(*inz, CHR_ROM, RI.INES_CHRSize * 0x2000);
+	}
 
 	if (RI.INES_Version == 2)
 	{
@@ -547,7 +591,7 @@ const TCHAR *	OpenFileiNES (FILE *in)
 	return NULL;
 }
 
-const TCHAR *	OpenFileUNIF (FILE *in)
+const TCHAR *	OpenFileUNIF (FILE *in, unzFile *inz)
 {
 	unsigned long Signature, BlockLen;
 	unsigned char *tPRG[0x10], *tCHR[0x10];
@@ -557,11 +601,20 @@ const TCHAR *	OpenFileUNIF (FILE *in)
 	int i;
 	unsigned char tp;
 
-	fread(&Signature, 4, 1, in);
+	if (in) {
+		fread(&Signature, 4, 1, in);
+	} else {
+		unzReadCurrentFile(*inz, &Signature, 4);
+	}
+
 	if (Signature != MKID('UNIF'))
 		return _T("UNIF header signature not found!");
 
-	fseek(in, 28, SEEK_CUR);	// skip "expansion area"
+	if (in) {
+		fseek(in, 28, SEEK_CUR);	// skip "expansion area"
+	} else {
+		unzseek(*inz, 28, SEEK_CUR);	// skip "expansion area"
+	}
 
 	RI.ROMType = ROM_UNIF;
 
@@ -582,26 +635,51 @@ const TCHAR *	OpenFileUNIF (FILE *in)
 	while (!feof(in))
 	{
 		int id = 0;
-		fread(&Signature, 4, 1, in);
-		fread(&BlockLen, 4, 1, in);
-		if (feof(in))
-			continue;
+
+		if (in) {
+			fread(&Signature, 4, 1, in);
+			fread(&BlockLen, 4, 1, in);
+			if (feof(in))
+				continue;
+		} else {
+			unzReadCurrentFile(*inz, &Signature, 4);
+			unzReadCurrentFile(*inz, &BlockLen, 4);
+			if (unzeof(*inz))
+				continue;
+		}
+
 		switch (Signature)
 		{
 		case MKID('MAPR'):
 			RI.UNIF_BoardName = new char[BlockLen];
-			fread(RI.UNIF_BoardName, 1, BlockLen, in);
+			if (in) {
+				fread(RI.UNIF_BoardName, 1, BlockLen, in);
+			} else {
+				unzReadCurrentFile(*inz, RI.UNIF_BoardName, BlockLen);
+			}
 			break;
 		case MKID('TVCI'):
-			fread(&tp, 1, 1, in);
+			if (in) {
+				fread(&tp, 1, 1, in);
+			} else {
+				unzReadCurrentFile(*inz, &tp, 1);
+			}
 			RI.UNIF_NTSCPAL = tp;
 			break;
 		case MKID('BATR'):
-			fread(&tp, 1, 1, in);
+			if (in) {
+				fread(&tp, 1, 1, in);
+			} else {
+				unzReadCurrentFile(*inz, &tp, 1);
+			}
 			RI.UNIF_Battery = TRUE;
 			break;
 		case MKID('MIRR'):
-			fread(&tp, 1, 1, in);
+			if (in) {
+				fread(&tp, 1, 1, in);
+			} else {
+				unzReadCurrentFile(*inz, &tp, 1);
+			}
 			RI.UNIF_Mirroring = tp;
 			break;
 		case MKID('PRGF'):	id++;
@@ -624,7 +702,11 @@ const TCHAR *	OpenFileUNIF (FILE *in)
 			RI.UNIF_PRGSize[id] = BlockLen;
 			PRGsize += BlockLen;
 			tPRG[id] = new unsigned char[BlockLen];
-			fread(tPRG[id], 1, BlockLen, in);
+			if (in) {
+				fread(tPRG[id], 1, BlockLen, in);
+			} else {
+				unzReadCurrentFile(*inz, tPRG[id], BlockLen);
+			}
 			break;
 
 		case MKID('CHRF'):	id++;
@@ -647,10 +729,18 @@ const TCHAR *	OpenFileUNIF (FILE *in)
 			RI.UNIF_CHRSize[id] = BlockLen;
 			CHRsize += BlockLen;
 			tCHR[id] = new unsigned char[BlockLen];
-			fread(tCHR[id], 1, BlockLen, in);
+			if (in) {
+				fread(tCHR[id], 1, BlockLen, in);
+			} else {
+				unzReadCurrentFile(*inz, tCHR[id], BlockLen);
+			}
 			break;
 		default:
-			fseek(in, BlockLen, SEEK_CUR);
+			if (in) {
+				fseek(in, BlockLen, SEEK_CUR);
+			} else {
+				unzseek(*inz, BlockLen, SEEK_CUR);
+			}
 		}
 	}
 
@@ -719,17 +809,26 @@ const TCHAR *	OpenFileUNIF (FILE *in)
 	return NULL;
 }
 
-const TCHAR *	OpenFileFDS (FILE *in)
+const TCHAR *	OpenFileFDS (FILE *in, unzFile *inz)
 {
 	unsigned long Header;
 	unsigned char numSides;
 	int i;
 
-	fread(&Header, 4, 1, in);
+	if (in) {
+		fread(&Header, 4, 1, in);
+	} else {
+		unzReadCurrentFile(*inz, &Header, 4);
+	}
 	if (Header != MKID('FDS\x1a'))
 		return _T("FDS header signature not found!");
-	fread(&numSides, 1, 1, in);
-	fseek(in, 11, SEEK_CUR);
+	if (in) {
+		fread(&numSides, 1, 1, in);
+		fseek(in, 11, SEEK_CUR);
+	} else {
+		unzReadCurrentFile(*inz, &numSides, 1);
+		unzseek(*inz, 11, SEEK_CUR);
+	}
 
 	RI.ROMType = ROM_FDS;
 	RI.FDS_NumSides = numSides;
@@ -738,8 +837,13 @@ const TCHAR *	OpenFileFDS (FILE *in)
 	if (RI.FDS_NumSides > (MAX_PRGROM_SIZE >> 1) / 16)
 		return _T("FDS image is too large! Increase MAX_PRGROM_SIZE and recompile!");
 
-	for (i = 0; i < numSides; i++)
-		fread(PRG_ROM[i << 4], 1, 65500, in);
+	for (i = 0; i < numSides; i++) {
+		if (in) {
+			fread(PRG_ROM[i << 4], 1, 65500, in);
+		} else {
+			unzReadCurrentFile(*inz, PRG_ROM[i << 4], 65500);
+		}
+	}
 
 	memcpy(PRG_ROM[MAX_PRGROM_SIZE >> 1], PRG_ROM[0x000], numSides << 16);
 
@@ -757,16 +861,26 @@ const TCHAR *	OpenFileFDS (FILE *in)
 	return NULL;
 }
 
-const TCHAR *	OpenFileNSF (FILE *in)
+const TCHAR *	OpenFileNSF (FILE *in, unzFile *inz)
 {
 	unsigned char Header[128];	// Header Bytes
 	int ROMlen;
+	unz_file_info zfile_info;
 	int LoadAddr;
 
-	fseek(in, 0, SEEK_END);
-	ROMlen = ftell(in) - 128;
-	fseek(in, 0, SEEK_SET);
-	fread(Header, 1, 128, in);
+	if (in) {
+		fseek(in, 0, SEEK_END);
+		ROMlen = ftell(in) - 128;
+		fseek(in, 0, SEEK_SET);
+		fread(Header, 1, 128, in);
+	} else {
+		if (unzGetCurrentFileInfo(*inz, &zfile_info, NULL, 0, NULL, 0, NULL, 0) == UNZ_OK) {
+			ROMlen = zfile_info.uncompressed_size;
+		} else {
+			return _T("NSF Archive support not ready yet!");
+		}
+		unzReadCurrentFile(*inz, Header, 128);
+	}
 	if (memcmp(Header, "NESM\x1a", 5))
 		return _T("NSF header signature not found!");
 	if (Header[5] != 1)
@@ -797,16 +911,22 @@ const TCHAR *	OpenFileNSF (FILE *in)
 	if (ROMlen > MAX_PRGROM_SIZE * 0x1000)
 		return _T("NSF is too large! Increase MAX_PRGROM_SIZE and recompile!");
 
-	if (memcmp(RI.NSF_InitBanks, "\0\0\0\0\0\0\0\0", 8))
-	{
-		fread(&PRG_ROM[0][0] + (LoadAddr & 0x0FFF), 1, ROMlen, in);
+	if (memcmp(RI.NSF_InitBanks, "\0\0\0\0\0\0\0\0", 8)) {
+		if (in) {
+			fread(&PRG_ROM[0][0] + (LoadAddr & 0x0FFF), 1, ROMlen, in);
+		} else {
+			unzReadCurrentFile(*inz, &PRG_ROM[0][0] + (LoadAddr & 0x0FFF), ROMlen);
+		}
 		PRGSizeROM = ROMlen + (LoadAddr & 0xFFF);
 	}
 	else
 	{
 		memcpy(RI.NSF_InitBanks, "\x00\x01\x02\x03\x04\x05\x06\x07", 8);
-		fread(&PRG_ROM[0][0] + (LoadAddr & 0x7FFF), 1, ROMlen, in);
-		PRGSizeROM = ROMlen + (LoadAddr & 0x7FFF);
+		if (in) {
+			fread(&PRG_ROM[0][0] + (LoadAddr & 0x7FFF), 1, ROMlen, in);
+		} else {
+			unzReadCurrentFile(*inz, &PRG_ROM[0][0] + (LoadAddr & 0x7FFF), ROMlen);
+		}
 	}
 
 	PRGSizeROM = (PRGSizeROM / 0x1000) + ((PRGSizeROM % 0x1000) ? 1 : 0);
@@ -832,6 +952,153 @@ const TCHAR *	OpenFileNSF (FILE *in)
 	EI.DbgOut(_T("Data length: %iKB"), RI.NSF_DataSize >> 10);
 	return NULL;
 }
+
+////////////////////////////////
+//rveach: ZIP support
+////////////////////////////////
+
+BOOL GetNextUsableFile_Zip(unzFile *zin, char *zFname) {
+	int len;
+
+	do {
+		if (unzGetCurrentFileInfo(*zin, 0, zFname, 512, 0, 0, 0, 0) != UNZ_OK)
+			continue;
+
+		len = strlen(zFname);
+
+		if (len <= 4)
+			continue;
+		if (!_stricmp(zFname + len - 4, ".NES")
+				&& !_stricmp(zFname + len - 4, ".FDS")
+				&& !_stricmp(zFname + len - 4, ".NSF")
+				&& !_stricmp(zFname + len - 5, ".UNIF")
+				&& !_stricmp(zFname + len - 4, ".UNF")) {
+			continue;
+		}
+
+		return TRUE;
+	} while (unzGoToNextFile(*zin) == UNZ_OK);
+
+	return FALSE;
+}
+
+BOOL CALLBACK ArchiveFileCallback(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	int position;
+
+	switch(uMsg)
+	{
+	case WM_INITDIALOG:
+		position = 0;
+
+		unzGoToFirstFile(zFile);
+
+		while (GetNextUsableFile_Zip(&zFile, zFname)) {
+			SendDlgItemMessage(hwndDlg, IDC_ARCHIVE_LIST, LB_ADDSTRING, 0, (LPARAM)zFname);
+			position++;
+
+			if (unzGoToNextFile(zFile) != UNZ_OK)
+				break;
+		}
+
+		if (!position) {
+			EndDialog(hwndDlg, -2);
+			return TRUE;
+		} else if (position == 1) {
+			EndDialog(hwndDlg, 0);
+			return TRUE;
+		}
+
+		SendDlgItemMessage(hwndDlg, IDC_ARCHIVE_LIST, LB_SETCURSEL, 0, 0);
+		break;
+	case WM_COMMAND:
+		switch(LOWORD(wParam))
+		{
+			case IDOK:
+				EndDialog(hwndDlg, SendDlgItemMessage(hwndDlg, IDC_ARCHIVE_LIST, LB_GETCURSEL, 0, 0));
+				return TRUE;
+
+			case IDCANCEL:
+				EndDialog(hwndDlg, -1);
+				return TRUE;
+		}
+		break;
+	}
+
+	return FALSE;
+}
+
+const TCHAR *	OpenFileZIP (unzFile *zin)
+{
+	const TCHAR *result = NULL;
+	int position;
+	int len;
+
+	if (unzGoToFirstFile(*zin) == UNZ_OK)
+	{
+		position = DialogBox(hInst, (LPCTSTR)IDD_ARCHIVE, hMainWnd, ArchiveFileCallback);
+
+		switch (position)
+		{
+		case -1:
+			result = _T("Cancelled by User!");
+			break;
+		case -2:
+			result = _T("No usable files found in the Archive!");
+			break;
+		default:
+			unzGoToFirstFile(*zin);
+
+			while (GetNextUsableFile_Zip(zin, zFname))
+			{
+				if (!position)
+					break;
+
+				position--;
+				if (unzGoToNextFile(*zin) != UNZ_OK)
+					break;
+			}
+
+			if (!position)
+			{
+				if (unzOpenCurrentFile(*zin) == UNZ_OK)
+				{
+					len = strlen(zFname);
+					EI.DbgOut(_T("Loading file '%s' from zip..."), zFname);
+
+					if (!_stricmp(zFname + len - 4, ".NES"))
+						result = OpenFileiNES(NULL, zin);
+					else if (!_stricmp(zFname + len - 4, ".FDS"))
+						result = OpenFileFDS(NULL, zin);
+					else if (!_stricmp(zFname + len - 4, ".NSF"))
+						result = OpenFileNSF(NULL, zin);
+					else //unf/unif
+						result = OpenFileUNIF(NULL, zin);
+
+					unzCloseCurrentFile(*zin);
+				}
+				else
+				{
+					result = _T("Failed to open the file in the Archive!");
+				}
+			}
+			else
+			{
+				result = _T("Archive file error!");
+			}
+			break;
+		}
+	}
+	else
+	{
+		result = _T("No ROM files found in the Archive!");
+	}
+
+	return result;
+}
+////////////////////////////////
+////////////////////////////////
+////////////////////////////////
 
 void	SetRegion (Region NewRegion)
 {

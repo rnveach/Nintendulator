@@ -7,6 +7,9 @@
 
 #pragma once
 
+// rveach: zip support
+#include "unzip.h"
+
 namespace NES
 {
 extern int SRAM_Size;
@@ -65,10 +68,12 @@ int	FDSLoad (FILE *, int ver);
 void	SaveSRAM (void);
 void	LoadSRAM (void);
 DWORD	getMask (unsigned int);
-const TCHAR *	OpenFileiNES (FILE *);
-const TCHAR *	OpenFileUNIF (FILE *);
-const TCHAR *	OpenFileFDS (FILE *);
-const TCHAR *	OpenFileNSF (FILE *);
+const TCHAR *	OpenFileiNES (FILE *, unzFile *);
+const TCHAR *	OpenFileUNIF (FILE *, unzFile *);
+const TCHAR *	OpenFileFDS (FILE *, unzFile *);
+const TCHAR *	OpenFileNSF (FILE *, unzFile *);
+// rveach: zip support
+const TCHAR *	OpenFileZIP (unzFile *);
 void	SetRegion (Region);
 void	InitHandlers (void);
 void	Reset (RESET_TYPE);
