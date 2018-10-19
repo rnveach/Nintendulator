@@ -48,6 +48,11 @@ extern	void		UpdateTitlebar (void);
 extern	void	__cdecl	PrintTitlebar (const TCHAR *Text, ...);
 extern	void		AddDebug (const TCHAR *txt);
 
+// rveach: eclipse doesn't define this
+#ifndef _MSC_VER
+#define min(a,b) ((a) < (b) ? (a) : (b))
+#endif
+
 // Shortcut macros for use in savestate code
 #define	writeByte(val) { register unsigned char _val = val; fwrite(&_val, 1, 1, out); clen++; }
 #define	writeWord(val) { register unsigned short _val = val; fwrite(&_val, 2, 1, out); clen += 2; }

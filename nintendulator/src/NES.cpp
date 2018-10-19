@@ -420,10 +420,10 @@ void	CloseFile (void)
 }
 
 #define MKID(a) ((unsigned long) \
-		(((a) >> 24) & 0x000000FF) | \
-		(((a) >>  8) & 0x0000FF00) | \
-		(((a) <<  8) & 0x00FF0000) | \
-		(((a) << 24) & 0xFF000000))
+		(((a)          >> 24) & 0x000000FF) | \
+		(((a)          >>  8) & 0x0000FF00) | \
+		(((a & 0xFF00) <<  8) & 0x00FF0000) | \
+		(((a & 0xFF)   << 24) & 0xFF000000))
 
 // Generates a bit mask sufficient to fit the specified value
 DWORD	getMask (unsigned int maxval)

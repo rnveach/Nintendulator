@@ -17,7 +17,10 @@
 #include "AVI.h"
 #include <commdlg.h>
 
+// rveach: eclipse doesn't understand pragma
+#ifdef _MSC_VER
 #pragma comment(lib, "vfw32.lib")
+#endif
 
 // AVI utilities -- for creating avi files
 // (c) 2002 Lucian Wischik. No restrictions on use.
