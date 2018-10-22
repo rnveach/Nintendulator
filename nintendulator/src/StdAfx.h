@@ -31,6 +31,7 @@
 #include <shlwapi.h>
 
 // C RunTime Header Files
+#include <stdint.h>
 #include <stdlib.h>
 #include <malloc.h>
 #include <memory.h>

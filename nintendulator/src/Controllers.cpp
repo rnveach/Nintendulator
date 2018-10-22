@@ -317,7 +317,7 @@ BOOL CALLBACK	EnumMouseObjectsCallback (LPCDIDEVICEOBJECTINSTANCE lpddoi, LPVOID
 
 BOOL CALLBACK	EnumJoystickObjectsCallback (LPCDIDEVICEOBJECTINSTANCE lpddoi, LPVOID pvRef)
 {
-	int DevNum = (int)pvRef;
+	int DevNum = (uintptr_t)pvRef;
 	int ItemNum = 0;
 	if (IsEqualGUID(lpddoi->guidType, GUID_XAxis))
 	{

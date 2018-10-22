@@ -180,7 +180,7 @@ const MapperInfo	*MAPINT	LoadMapper (const ROMInfo *_ROM)
 	
 	if (ROM->ROMType == ROM_UNDEFINED)	/* Allow enumerating mappers */
 	{
-		unsigned int i = (unsigned int)ROM->Filename;
+		unsigned int i = (uintptr_t)ROM->Filename;
 		if (i >= sizeof(BoardTable)/sizeof(MapperInfo *)-1)
 		{
 			UnloadMapper();

@@ -982,7 +982,7 @@ BOOL GetNextUsableFile_Zip(unzFile *zin, char *zFname) {
 	return FALSE;
 }
 
-BOOL CALLBACK ArchiveFileCallback(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+INT_PTR	CALLBACK ArchiveFileCallback(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	int position;
 
@@ -1036,7 +1036,7 @@ const TCHAR *	OpenFileZIP (unzFile *zin)
 
 	if (unzGoToFirstFile(*zin) == UNZ_OK)
 	{
-		position = DialogBox(hInst, (LPCTSTR)IDD_ARCHIVE, hMainWnd, ArchiveFileCallback);
+		position = DialogBox(hInst, MAKEINTRESOURCE(IDD_ARCHIVE), hMainWnd, ArchiveFileCallback);
 
 		switch (position)
 		{
