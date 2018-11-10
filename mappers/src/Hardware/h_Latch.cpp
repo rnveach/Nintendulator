@@ -6,6 +6,7 @@
  */
 
 #include	"h_latch.h"
+#include <stdlib.h>
 
 namespace Latch
 {
@@ -69,7 +70,6 @@ int	MAPINT	SaveLoad_D (STATE_TYPE mode, int offset, unsigned char *data)
 	return offset;
 }
 
-#include <stdlib.h>
 void	MAPINT	Write (int Bank, int _Addr, int Val)
 {
 #ifdef BUS_CONFLICTS
