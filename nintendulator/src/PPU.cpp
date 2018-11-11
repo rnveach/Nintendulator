@@ -38,6 +38,8 @@ unsigned char Reg2000, Reg2001, Reg2002;
 unsigned char HVTog, ShortSL, IsRendering, OnScreen;
 
 unsigned long VRAMAddr, IntReg;
+// rveach: get written VRAMAddress
+unsigned long previousVRAMAddr;
 unsigned char IntX;
 unsigned char TileData[272];
 
@@ -204,6 +206,8 @@ void	Reset (void)
 	SprAddr = 0;
 	IsRendering = FALSE;
 	OnScreen = FALSE;
+	// rveach
+	previousVRAMAddr = 0;
 	IOVal = 0;
 	IOMode = 0;
 	Clockticks = 0;
@@ -1217,6 +1221,9 @@ int	__fastcall	Read4 (void)
 
 int	__fastcall	Read7 (void)
 {
+	// rveach
+	previousVRAMAddr = VRAMAddr & 0x3FFF;
+
 	IOMode = 5;
 	if ((VRAMAddr & 0x3F00) == 0x3F00)
 	{
@@ -1324,6 +1331,9 @@ void	__fastcall	Write6 (int Val)
 
 void	__fastcall	Write7 (int Val)
 {
+	// rveach
+	previousVRAMAddr = VRAMAddr & 0x3FFF;
+
 	if ((VRAMAddr & 0x3F00) == 0x3F00)
 	{
 		register unsigned char Addr = (unsigned char)VRAMAddr & 0x1F;

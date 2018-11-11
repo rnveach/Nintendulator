@@ -176,6 +176,26 @@
 			<locationURI>PARENT-1-PROJECT_LOC/src/MapperInterface.h</locationURI>
 		</link>
 		<link>
+			<name>src/MasterDump.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src/MasterDump.cpp</locationURI>
+		</link>
+		<link>
+			<name>src/MasterDump.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src/MasterDump.h</locationURI>
+		</link>
+		<link>
+			<name>src/MemoryFollower.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src/MemoryFollower.cpp</locationURI>
+		</link>
+		<link>
+			<name>src/MemoryFollower.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src/MemoryFollower.h</locationURI>
+		</link>
+		<link>
 			<name>src/Movie.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/src/Movie.cpp</locationURI>

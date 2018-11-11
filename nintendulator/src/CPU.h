@@ -57,6 +57,14 @@ extern BOOL LogBadOps;
 #define PCL rPC.Segment[0]
 #define PCH rPC.Segment[1]
 
+// rveach: making this visible to all
+extern SplitReg rCalcAddr;
+extern unsigned char Opcode;
+extern unsigned short OpAddr;
+#define OpEffectiveAddress rCalcAddr.Full
+extern BOOL LastNMI;
+extern BOOL LastIRQ;
+
 unsigned char	MemGet (unsigned int);
 void	MemSet (unsigned int, unsigned char);
 

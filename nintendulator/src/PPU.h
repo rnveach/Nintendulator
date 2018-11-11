@@ -26,6 +26,8 @@ extern unsigned char Reg2000;
 extern unsigned char IsRendering, OnScreen;
 
 extern unsigned long VRAMAddr;
+// rveach: save previous address
+extern unsigned long previousVRAMAddr;
 
 extern BOOL PALRatio, SkipTick;
 extern unsigned char	VRAM[0x4][0x400];

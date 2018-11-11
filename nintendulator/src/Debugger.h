@@ -24,6 +24,9 @@
 #define	DEBUG_BREAK_BRK		0x40
 /* #define	DEBUG_BREAK_RST		0x80	/* unused */
 
+// rveach: extended information
+#define	DEBUG_BREAK_REGISTER	0x80
+
 #define	DEBUG_DETAIL_NONE	0
 #define	DEBUG_DETAIL_NAMETABLE	1
 #define	DEBUG_DETAIL_SPRITE	2
@@ -38,6 +41,13 @@ extern int	Mode;
 extern BOOL	NTabChanged, PalChanged, PatChanged, SprChanged;
 
 extern BOOL	Step;
+
+// rveach: making this visible to all
+enum ADDRMODE { IMP, ACC, IMM, ADR, ABS, IND, REL, ABX, ABY, ZPG, ZPX, ZPY, INX, INY, ERR, NUM_ADDR_MODES };
+
+extern const enum ADDRMODE TraceAddrMode[256];
+extern const unsigned char AddrBytes[NUM_ADDR_MODES];
+extern const char TraceArr[256][5];
 
 void	Init (void);
 void	Destroy (void);
