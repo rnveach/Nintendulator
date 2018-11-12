@@ -19,64 +19,12 @@
 #include "GFX.h"
 #include "Genie.h"
 #include "States.h"
+#include "BreakPoints.h"
 
 #ifdef	ENABLE_DEBUGGER
 
 namespace Debugger
 {
-struct tBreakpoint
-{
-	TCHAR desc[32];
-	unsigned short addr_start, addr_end;
-	unsigned char opcode;
-	unsigned char type;
-	unsigned char enabled;
-	struct tBreakpoint *prev, *next;
-	void updateDescription ()
-	{
-		switch (type)
-		{
-		case DEBUG_BREAK_EXEC:
-			if (addr_start == addr_end)
-				_stprintf(desc, _T("Exec: $%04X"), addr_start);
-			else	_stprintf(desc, _T("Exec: $%04X-$%04X"), addr_start, addr_end);
-			break;
-		case DEBUG_BREAK_READ:
-			if (addr_start == addr_end)
-				_stprintf(desc, _T("Read: $%04X"), addr_start);
-			else	_stprintf(desc, _T("Read: $%04X-$%04X"), addr_start, addr_end);
-			break;
-		case DEBUG_BREAK_WRITE:
-			if (addr_start == addr_end)
-				_stprintf(desc, _T("Write: $%04X"), addr_start);
-			else	_stprintf(desc, _T("Write: $%04X-$%04X"), addr_start, addr_end);
-			break;
-		case DEBUG_BREAK_READ | DEBUG_BREAK_WRITE:
-			if (addr_start == addr_end)
-				_stprintf(desc, _T("Access: $%04X"), addr_start);
-			else	_stprintf(desc, _T("Access: $%04X-$%04X"), addr_start, addr_end);
-			break;
-		case DEBUG_BREAK_OPCODE:
-			_stprintf(desc, _T("Opcode: $%02X"), opcode);
-			break;
-		case DEBUG_BREAK_NMI:
-			_stprintf(desc, _T("Interrupt: NMI"));
-			break;
-		case DEBUG_BREAK_IRQ:
-			_stprintf(desc, _T("Interrupt: IRQ"));
-			break;
-		case DEBUG_BREAK_BRK:
-			_stprintf(desc, _T("Interrupt: BRK"));
-			break;
-		default:
-			_stprintf(desc, _T("UNDEFINED"));
-			break;
-		}
-		if (enabled)
-			_tcscat(desc, _T(" (+)"));
-		else	_tcscat(desc, _T(" (-)"));
-	}
-};
 	
 BOOL	Enabled;
 int	Mode;
@@ -116,7 +64,6 @@ int	MemOffset;
 FILE	*LogFile;
 unsigned char	BPcache[0x10101];
 unsigned char	PalCache[0x20];
-struct tBreakpoint *Breakpoints;
 
 BOOL inUpdate = FALSE;
 
@@ -251,7 +198,7 @@ void	Init (void)
 	CPUWnd = NULL;
 	PPUWnd = NULL;
 
-	Breakpoints = NULL;
+	BreakPoints::list = NULL;
 	TraceOffset = -1;
 	MemOffset = 0;
 
@@ -263,10 +210,10 @@ void	Destroy (void)
 {
 	StopLogging();
 	SetMode(0);
-	while (Breakpoints != NULL)
+	while (BreakPoints::list != NULL)
 	{
-		tBreakpoint *ptr = Breakpoints;
-		Breakpoints = Breakpoints->next;
+		tBreakPoint *ptr = BreakPoints::list;
+		BreakPoints::list = BreakPoints::list->next;
 		delete ptr;
 	}
 }
@@ -1340,9 +1287,9 @@ void	DumpPPU (void)
 void	CacheBreakpoints (void)
 {
 	int i;
-	struct tBreakpoint *bp;
+	struct tBreakPoint *bp;
 	ZeroMemory(BPcache, sizeof(BPcache));
-	for (bp = Breakpoints; bp != NULL; bp = bp->next)
+	for (bp = BreakPoints::list; bp != NULL; bp = bp->next)
 	{
 		if (!bp->enabled)
 			continue;
@@ -1358,9 +1305,9 @@ void	CacheBreakpoints (void)
 	}
 }
 
-struct tBreakpoint *GetBreakpoint (HWND hwndDlg, int *_line)
+struct tBreakPoint *GetBreakpoint (HWND hwndDlg, int *_line)
 {
-	struct tBreakpoint *bp;
+	struct tBreakPoint *bp;
 	TCHAR *str;
 	int line, len;
 
@@ -1380,7 +1327,7 @@ struct tBreakpoint *GetBreakpoint (HWND hwndDlg, int *_line)
 	SendDlgItemMessage(hwndDlg, IDC_DEBUG_BREAK_LIST, LB_GETTEXT, line, (LPARAM)str);
 
 	// try to find it in the breakpoint list
-	bp = Breakpoints;
+	bp = BreakPoints::list;
 	while (bp != NULL)
 	{
 		if (!_tcscmp(bp->desc, str))
@@ -1393,7 +1340,7 @@ struct tBreakpoint *GetBreakpoint (HWND hwndDlg, int *_line)
 	return bp;
 }
 
-void	SetBreakpoint (HWND hwndDlg, struct tBreakpoint *bp)
+void	SetBreakpoint (HWND hwndDlg, struct tBreakPoint *bp)
 {
 	int line;
 	if (bp == NULL)
@@ -1422,7 +1369,7 @@ INT_PTR CALLBACK BreakpointProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
 {
 	int wmId, wmEvent;
 	TCHAR tpc[8];
-	struct tBreakpoint *bp = (struct tBreakpoint *)GetWindowLongPtr(hwndDlg, GWLP_USERDATA);
+	struct tBreakPoint *bp = (struct tBreakPoint *)GetWindowLongPtr(hwndDlg, GWLP_USERDATA);
 	int line, len, Addr;
 	TCHAR *str;
 
@@ -1432,8 +1379,8 @@ INT_PTR CALLBACK BreakpointProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
 	{
 	case WM_INITDIALOG:
 		SetWindowLongPtr(hwndDlg, GWLP_USERDATA, lParam);
-		bp = (struct tBreakpoint *)lParam;
-		if (bp == (struct tBreakpoint *)(size_t)0xFFFFFFFF)
+		bp = (struct tBreakPoint *)lParam;
+		if (bp == (struct tBreakPoint *)(size_t)0xFFFFFFFF)
 		{
 			bp = NULL;
 			SetWindowLongPtr(hwndDlg, GWLP_USERDATA, NULL);
@@ -1618,18 +1565,18 @@ INT_PTR CALLBACK BreakpointProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
 			}
 			if (bp == NULL)
 			{
-				bp = new struct tBreakpoint;
+				bp = new struct tBreakPoint;
 				if (bp == NULL)
 				{
 					MessageBox(hwndDlg, _T("Failed to add breakpoint!"), _T("Breakpoint"), MB_ICONERROR);
 					EndDialog(hwndDlg, (INT_PTR)NULL);
 					break;
 				}
-				bp->next = Breakpoints;
+				bp->next = BreakPoints::list;
 				bp->prev = NULL;
 				if (bp->next != NULL)
 					bp->next->prev = bp;
-				Breakpoints = bp;
+				BreakPoints::list = bp;
 			}
 			bp->type = (unsigned char)type;
 			bp->opcode = (unsigned char)opcode;
@@ -1656,7 +1603,7 @@ INT_PTR CALLBACK CPUProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	/* const */ int trace_tabs[3] = {25, 60, 80};	// Win9x requires these to be in writable memory
 	TCHAR tpc[8];
 	SCROLLINFO sinfo;
-	struct tBreakpoint *bp;
+	struct tBreakPoint *bp;
 	int line, len, Addr;
 	TCHAR *str;
 
@@ -1690,7 +1637,7 @@ INT_PTR CALLBACK CPUProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		SetScrollInfo(GetDlgItem(hwndDlg, IDC_DEBUG_MEM_SCROLL), SB_CTL, &sinfo, TRUE);
 		CheckRadioButton(hwndDlg, IDC_DEBUG_MEM_CPU, IDC_DEBUG_MEM_PAL, IDC_DEBUG_MEM_CPU);
 
-		for (bp = Breakpoints; bp != NULL; bp = bp->next)
+		for (bp = BreakPoints::list; bp != NULL; bp = bp->next)
 			SendDlgItemMessage(hwndDlg, IDC_DEBUG_BREAK_LIST, LB_ADDSTRING, 0, (LPARAM)bp->desc);
 		return FALSE;
 
@@ -1853,7 +1800,7 @@ INT_PTR CALLBACK CPUProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			else	GetBreakpoint(hwndDlg, NULL);	// enable the add/remove buttons
 			return TRUE;
 		case IDC_DEBUG_BREAK_ADD:
-			bp = (struct tBreakpoint *)DialogBoxParam(hInst, MAKEINTRESOURCE(IDD_BREAKPOINT), hwndDlg, BreakpointProc, (LPARAM)NULL);
+			bp = (struct tBreakPoint *)DialogBoxParam(hInst, MAKEINTRESOURCE(IDD_BREAKPOINT), hwndDlg, BreakpointProc, (LPARAM)NULL);
 			// if user cancels, nothing was added
 			if (bp == NULL)
 				break;
@@ -1871,7 +1818,7 @@ INT_PTR CALLBACK CPUProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				break;
 
 			// then open the editor on it
-			bp = (struct tBreakpoint *)DialogBoxParam(hInst, MAKEINTRESOURCE(IDD_BREAKPOINT), hwndDlg, BreakpointProc, (LPARAM)bp);
+			bp = (struct tBreakPoint *)DialogBoxParam(hInst, MAKEINTRESOURCE(IDD_BREAKPOINT), hwndDlg, BreakpointProc, (LPARAM)bp);
 			// if user cancels, nothing was changed
 			if (bp == NULL)
 				break;
@@ -1892,7 +1839,7 @@ INT_PTR CALLBACK CPUProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			// and take it out of the list
 			if (bp->prev != NULL)
 				bp->prev->next = bp->next;
-			else	Breakpoints = bp->next;
+			else	BreakPoints::list = bp->next;
 			if (bp->next != NULL)
 				bp->next->prev = bp->prev;
 			delete bp;
@@ -1973,7 +1920,7 @@ INT_PTR CALLBACK CPUProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case IDC_DEBUG_TRACE_LIST:
 			if (wmEvent == LBN_DBLCLK)
 			{
-				bp = (struct tBreakpoint *)DialogBoxParam(hInst, MAKEINTRESOURCE(IDD_BREAKPOINT), hwndDlg, BreakpointProc, (LPARAM)0xFFFFFFFF);
+				bp = (struct tBreakPoint *)DialogBoxParam(hInst, MAKEINTRESOURCE(IDD_BREAKPOINT), hwndDlg, BreakpointProc, (LPARAM)0xFFFFFFFF);
 				// if user cancels, nothing was added
 				if (bp == NULL)
 					break;

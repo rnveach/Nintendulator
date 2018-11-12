@@ -106,6 +106,16 @@
 			<locationURI>PARENT-1-PROJECT_LOC/src/AVI.h</locationURI>
 		</link>
 		<link>
+			<name>src/BreakPoints.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src/BreakPoints.cpp</locationURI>
+		</link>
+		<link>
+			<name>src/BreakPoints.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src/BreakPoints.h</locationURI>
+		</link>
+		<link>
 			<name>src/CPU.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/src/CPU.cpp</locationURI>
