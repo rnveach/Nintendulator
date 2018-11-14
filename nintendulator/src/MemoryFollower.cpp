@@ -27,7 +27,7 @@ void	Destroy (void)
 	// nothing
 }
 
-__inline MEMORYFOLLOW_STRUCT* Get_NES(MEMORYFOLLOW_TYPE type, unsigned int address, bool read)
+__inline MEMORYFOLLOW_STRUCT* Get_NES(MEMORYFOLLOW_TYPE type, unsigned int address, BOOL read)
 {
 	static MEMORYFOLLOW_STRUCT tmpMemFol[DEBUG_MEMORYFOLLOW_MEMORYSIZE + 1];
 	int a;
@@ -149,7 +149,7 @@ retry:
 	return NULL;
 }
 
-__inline MEMORYFOLLOW_STRUCT* Get_FDS(MEMORYFOLLOW_TYPE type, unsigned int address, bool read)
+__inline MEMORYFOLLOW_STRUCT* Get_FDS(MEMORYFOLLOW_TYPE type, unsigned int address, BOOL read)
 {
 	static MEMORYFOLLOW_STRUCT tmpMemFol[DEBUG_MEMORYFOLLOW_MEMORYSIZE + 1];
 
@@ -174,7 +174,7 @@ __inline MEMORYFOLLOW_STRUCT* Get_FDS(MEMORYFOLLOW_TYPE type, unsigned int addre
 	return NULL;
 }
 
-MEMORYFOLLOW_STRUCT* Get(MEMORYFOLLOW_TYPE type, unsigned int address, bool read)
+MEMORYFOLLOW_STRUCT* Get(MEMORYFOLLOW_TYPE type, unsigned int address, BOOL read)
 {
 	switch (RI.ROMType) {
 	case ROM_INES:

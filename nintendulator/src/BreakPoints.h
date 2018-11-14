@@ -7,7 +7,7 @@ struct tBreakPoint
 {
 	unsigned int addr_start, addr_end;
 	unsigned char type;
-	bool enabled;
+	BOOL enabled;
 	unsigned char flag;
 	// TODO: support opcode breakpoints
 

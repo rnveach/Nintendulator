@@ -49,7 +49,7 @@ __inline void	Set(int newAddresses, int newBanks)
 	memset(data, 0, size);
 }
 
-__inline bool Assign(unsigned short addr, unsigned char value) {
+__inline BOOL Assign(unsigned short addr, unsigned char value) {
 	register int a = EI.GetPRG_ROM4(addr>> 12);
 	if (a >= 0)
 	{

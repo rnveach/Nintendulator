@@ -33,6 +33,8 @@ BOOL	NTabChanged, PalChanged, PatChanged, SprChanged, DetChanged;
 
 int	DetailType, DetailNum;
 int	DetailTypeSave, DetailNumSave;
+const TCHAR			*DetailTitle;
+TCHAR				DetailText[DEBUG_DETAILLINES][40];
 
 BOOL	Logging, Step;
 
@@ -126,28 +128,10 @@ const unsigned char TraceIO[256] =
 	BP_NA, BP_RD, BP_NA, BP_RW, BP_RD, BP_RD, BP_RW, BP_RW, BP_NA, BP_RD, BP_NA, BP_RW, BP_RD, BP_RD, BP_RW, BP_RW
 };
 
-enum {
-	D_PAL_W = 256,
-	D_PAL_H = 32,
-
-	D_PAT_W = 256,
-	D_PAT_H = 128,
-
-	D_NAM_W = 256,
-	D_NAM_H = 240,
-
-	D_SPR_W = 256,
-	D_SPR_H = 88,
-
-	D_TIL_W = 64,
-	D_TIL_H = 64,
-};
-
 INT_PTR CALLBACK CPUProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK PPUProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void	StartLogging (void);
 void	StopLogging (void);
-void	CacheBreakpoints (void);
 
 void	Init (void)
 {
@@ -161,7 +145,7 @@ void	Init (void)
 	NTabChanged = PalChanged = PatChanged = SprChanged = DetChanged = FALSE;
 	DetailType = DetailNum = 0;
 	DetailTypeSave = DetailNumSave = 0;
-	
+
 	Logging = FALSE;
 	Step = FALSE;
 
@@ -274,11 +258,19 @@ void	StartLogging (void)
 	time(&aclock);
 	newtime = localtime(&aclock);
 
-	_stprintf(filename, _T("%s\\Dumps\\%s.%04i%02i%02i_%02i%02i%02i.debug"), DataPath, States::BaseFilename,
+	_stprintf(filename, _T("%s\\Dumps\\%s.%04i%02i%02i_%02i%02i%02i.log"), DataPath, States::BaseFilename,
 		newtime->tm_year + 1900, newtime->tm_mon + 1, newtime->tm_mday, newtime->tm_hour, newtime->tm_min, newtime->tm_sec);
 
-	Logging = TRUE;
 	LogFile = _tfopen(filename, _T("a+"));
+
+	if (LogFile == NULL)
+	{
+		MessageBox(hMainWnd, _T("Unable to open Log file!"), _T("Nintendulator"), MB_OK | MB_ICONERROR);
+	}
+	else
+	{
+		Logging = TRUE;
+	}
 }
 
 void	StopLogging (void)
@@ -300,45 +292,35 @@ unsigned char DebugMemPPU (unsigned short Addr)
 	return PPU::ReadHandlerDebug[Bank](Bank, Addr & 0x3FF);
 }
 
-BOOL IsBreakpoint (unsigned char opcode, unsigned short address, BOOL force_read)
-{
-	// read opcode, effective address has read breakpoint
-	if ((TraceIO[opcode] & DEBUG_BREAK_READ) && (BPcache[address] & DEBUG_BREAK_READ))
-		return TRUE;
-	// write opcode, effective address has write breakpoint, unless it's an explicit read (e.g. indirection or page-cross correction)
-	if ((TraceIO[opcode] & DEBUG_BREAK_WRITE) && (BPcache[address] & (force_read ? DEBUG_BREAK_READ : DEBUG_BREAK_WRITE)))
-		return TRUE;
-	return FALSE;
-}
-
 // Decodes an instruction into plain text, suitable for displaying in the debugger or writing to a logfile
 // Returns whether or not a breakpoint was encountered
 BOOL	DecodeInstruction (unsigned short Addr, char *str1, TCHAR *str2, BOOL checkBreakpoints)
 {
 	unsigned char OpData[3] = {0, 0, 0};
 	unsigned short Operand = 0, MidAddr = 0;
-	int EffectiveAddr = -1, FixupAddr = 0;
+	int EffectiveAddr = -1;
 	OpData[0] = DebugMemCPU(Addr);
 
-	BOOL is_break = FALSE;
-	if (checkBreakpoints)
-	{
+	// TODO: add to mine the missing pieces
+	// BOOL is_break = FALSE;
+	// if (checkBreakpoints)
+	// {
 		// opcode breakpoint
-		if (BPcache[0x10000 | OpData[0]] & DEBUG_BREAK_OPCODE)
-			is_break = TRUE;
+	// 	if (BPcache[0x10000 | OpData[0]] & DEBUG_BREAK_OPCODE)
+	// 		is_break = TRUE;
 		// exec breakpoint
-		if (BPcache[Addr] & DEBUG_BREAK_EXEC)
-			is_break = TRUE;
+	// 	if (BPcache[Addr] & DEBUG_BREAK_EXEC)
+	// 		is_break = TRUE;
 		// interrupt breakpoints
-		if ((CPU::GotInterrupt == INTERRUPT_NMI) && (BPcache[0x10100] & DEBUG_BREAK_NMI))
-			is_break = TRUE;
+	// 	if ((CPU::GotInterrupt == INTERRUPT_NMI) && (BPcache[0x10100] & DEBUG_BREAK_NMI))
+	// 		is_break = TRUE;
 //		if ((CPU::GotInterrupt == INTERRUPT_RST) && (BPcache[0x10100] & DEBUG_BREAK_RST))
 //			is_break = TRUE;
-		if ((CPU::GotInterrupt == INTERRUPT_IRQ) && (BPcache[0x10100] & DEBUG_BREAK_IRQ))
-			is_break = TRUE;
-		if ((CPU::GotInterrupt == INTERRUPT_BRK) && (BPcache[0x10100] & DEBUG_BREAK_BRK))
-			is_break = TRUE;
-	}
+	// 	if ((CPU::GotInterrupt == INTERRUPT_IRQ) && (BPcache[0x10100] & DEBUG_BREAK_IRQ))
+	// 		is_break = TRUE;
+	// 	if ((CPU::GotInterrupt == INTERRUPT_BRK) && (BPcache[0x10100] & DEBUG_BREAK_BRK))
+	// 		is_break = TRUE;
+	// }
 
 	switch (TraceAddrMode[OpData[0]])
 	{
@@ -440,6 +422,14 @@ BOOL	DecodeInstruction (unsigned short Addr, char *str1, TCHAR *str2, BOOL check
 			is_break = TRUE;
 		break;
 	case IMP:
+		//rveach: get return addresses
+		if (str2) {
+			if (OpData[0] == 0x60)
+				EffectiveAddr = 1 + (DebugMemCPU(0x100 | ((CPU::SP + 1) & 0xFF)) | (DebugMemCPU(0x100 | ((CPU::SP + 2) & 0xFF)) << 8));
+			else if (OpData[0] == 0x40)
+				EffectiveAddr = DebugMemCPU(0x100 | ((CPU::SP + 2) & 0xFF)) | (DebugMemCPU(0x100 | ((CPU::SP + 3) & 0xFF)) << 8);
+		}
+		////////
 		break;
 	case ACC:
 		break;
@@ -450,50 +440,66 @@ BOOL	DecodeInstruction (unsigned short Addr, char *str1, TCHAR *str2, BOOL check
 		Operand = Addr+2+(signed char)OpData[1];
 		break;
 	}
+
 	// Use this for outputting to debug logfile
 	if (str1)
 	{
+		// TODO: update this to my format
 		switch (TraceAddrMode[DebugMemCPU(Addr)])
 		{
 		case IMP:
-		case ERR:	sprintf(str1, "%04X  %02X       %s                           ",			Addr, OpData[0],			TraceArr[OpData[0]]);									break;
-		case ACC:	sprintf(str1, "%04X  %02X       %s A                         ",			Addr, OpData[0],			TraceArr[OpData[0]]);									break;
-		case IMM:	sprintf(str1, "%04X  %02X %02X    %s #$%02X                      ",		Addr, OpData[0], OpData[1],		TraceArr[OpData[0]], Operand);								break;
-		case REL:	sprintf(str1, "%04X  %02X %02X    %s $%04X                     ",		Addr, OpData[0], OpData[1],		TraceArr[OpData[0]], Operand);								break;
-		case ZPG:	sprintf(str1, "%04X  %02X %02X    %s $%02X = %02X                  ",		Addr, OpData[0], OpData[1],		TraceArr[OpData[0]], Operand, DebugMemCPU(Operand));					break;
-		case ZPX:	sprintf(str1, "%04X  %02X %02X    %s $%02X,X @ %02X = %02X           ",		Addr, OpData[0], OpData[1],		TraceArr[OpData[0]], Operand, EffectiveAddr, DebugMemCPU(EffectiveAddr));		break;
-		case ZPY:	sprintf(str1, "%04X  %02X %02X    %s $%02X,Y @ %02X = %02X           ",		Addr, OpData[0], OpData[1],		TraceArr[OpData[0]], Operand, EffectiveAddr, DebugMemCPU(EffectiveAddr));		break;
-		case INX:	sprintf(str1, "%04X  %02X %02X    %s ($%02X,X) @ %02X = %04X = %02X  ",		Addr, OpData[0], OpData[1],		TraceArr[OpData[0]], Operand, MidAddr, EffectiveAddr, DebugMemCPU(EffectiveAddr));	break;
-		case INY:	sprintf(str1, "%04X  %02X %02X    %s ($%02X),Y = %04X @ %04X = %02X",		Addr, OpData[0], OpData[1],		TraceArr[OpData[0]], Operand, MidAddr, EffectiveAddr, DebugMemCPU(EffectiveAddr));	break;
-		case ADR:	sprintf(str1, "%04X  %02X %02X %02X %s $%04X                     ",		Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand);								break;
-		case ABS:	sprintf(str1, "%04X  %02X %02X %02X %s $%04X = %02X                ",		Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand, DebugMemCPU(Operand));					break;
-		case IND:	sprintf(str1, "%04X  %02X %02X %02X %s ($%04X) = %04X            ",		Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand, EffectiveAddr);						break;
-		case ABX:	sprintf(str1, "%04X  %02X %02X %02X %s $%04X,X @ %04X = %02X       ",		Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand, EffectiveAddr, DebugMemCPU(EffectiveAddr));		break;
-		case ABY:	sprintf(str1, "%04X  %02X %02X %02X %s $%04X,Y @ %04X = %02X       ",		Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand, EffectiveAddr, DebugMemCPU(EffectiveAddr));		break;
-		default:	strcpy(str1, "                                             ");																			break;
+		case ERR:	sprintf(str1, "%04X  %02X       %s                           ",				Addr, OpData[0],						TraceArr[OpData[0]]);																break;
+		case ACC:	sprintf(str1, "%04X  %02X       %s A                         ",				Addr, OpData[0],						TraceArr[OpData[0]]);																break;
+		case IMM:	sprintf(str1, "%04X  %02X %02X    %s #$%02X                      ",			Addr, OpData[0], OpData[1],				TraceArr[OpData[0]], Operand);														break;
+		case REL:	sprintf(str1, "%04X  %02X %02X    %s $%04X                     ",			Addr, OpData[0], OpData[1],				TraceArr[OpData[0]], Operand);														break;
+		case ZPG:	sprintf(str1, "%04X  %02X %02X    %s $%02X = %02X                  ",		Addr, OpData[0], OpData[1],				TraceArr[OpData[0]], Operand, DebugMemCPU(Operand));								break;
+		case ZPX:	sprintf(str1, "%04X  %02X %02X    %s $%02X,X @ %02X = %02X           ",		Addr, OpData[0], OpData[1],				TraceArr[OpData[0]], Operand, EffectiveAddr, DebugMemCPU(EffectiveAddr));			break;
+		case ZPY:	sprintf(str1, "%04X  %02X %02X    %s $%02X,Y @ %02X = %02X           ",		Addr, OpData[0], OpData[1],				TraceArr[OpData[0]], Operand, EffectiveAddr, DebugMemCPU(EffectiveAddr));			break;
+		case INX:	sprintf(str1, "%04X  %02X %02X    %s ($%02X,X) @ %02X = %04X = %02X  ",		Addr, OpData[0], OpData[1],				TraceArr[OpData[0]], Operand, MidAddr, EffectiveAddr, DebugMemCPU(EffectiveAddr));	break;
+		case INY:	sprintf(str1, "%04X  %02X %02X    %s ($%02X),Y = %04X @ %04X = %02X",		Addr, OpData[0], OpData[1],				TraceArr[OpData[0]], Operand, MidAddr, EffectiveAddr, DebugMemCPU(EffectiveAddr));	break;
+		case ADR:	sprintf(str1, "%04X  %02X %02X %02X %s $%04X                     ",			Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand);														break;
+		case ABS:	sprintf(str1, "%04X  %02X %02X %02X %s $%04X = %02X                ",		Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand, DebugMemCPU(Operand));								break;
+		case IND:	sprintf(str1, "%04X  %02X %02X %02X %s ($%04X) = %04X            ",			Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand, EffectiveAddr);										break;
+		case ABX:	sprintf(str1, "%04X  %02X %02X %02X %s $%04X,X @ %04X = %02X       ",		Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand, EffectiveAddr, DebugMemCPU(EffectiveAddr));			break;
+		case ABY:	sprintf(str1, "%04X  %02X %02X %02X %s $%04X,Y @ %04X = %02X       ",		Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand, EffectiveAddr, DebugMemCPU(EffectiveAddr));			break;
+		default:	strcpy(str1, "                                             ");																																			break;
 		}
 	}
+
 	// Use this for outputting to the debugger's Trace pane
 	if (str2)
 	{
 		switch (TraceAddrMode[DebugMemCPU(Addr)])
 		{
 		case IMP:
-		case ERR:	_stprintf(str2, _T("%04X\t%02X\t%hs"),						Addr, OpData[0],			TraceArr[OpData[0]]);									break;
-		case ACC:	_stprintf(str2, _T("%04X\t%02X\t%hs\tA"),					Addr, OpData[0],			TraceArr[OpData[0]]);									break;
-		case IMM:	_stprintf(str2, _T("%04X\t%02X %02X\t%hs\t#$%02X"),				Addr, OpData[0], OpData[1],		TraceArr[OpData[0]], Operand);								break;
-		case REL:	_stprintf(str2, _T("%04X\t%02X %02X\t%hs\t$%04X"),				Addr, OpData[0], OpData[1],		TraceArr[OpData[0]], Operand);								break;
-		case ZPG:	_stprintf(str2, _T("%04X\t%02X %02X\t%hs\t$%02X = %02X"),			Addr, OpData[0], OpData[1],		TraceArr[OpData[0]], Operand, DebugMemCPU(Operand));					break;
-		case ZPX:	_stprintf(str2, _T("%04X\t%02X %02X\t%hs\t$%02X,X @ %02X = %02X"),		Addr, OpData[0], OpData[1],		TraceArr[OpData[0]], Operand, EffectiveAddr, DebugMemCPU(EffectiveAddr));		break;
-		case ZPY:	_stprintf(str2, _T("%04X\t%02X %02X\t%hs\t$%02X,Y @ %02X = %02X"),		Addr, OpData[0], OpData[1],		TraceArr[OpData[0]], Operand, EffectiveAddr, DebugMemCPU(EffectiveAddr));		break;
-		case INX:	_stprintf(str2, _T("%04X\t%02X %02X\t%hs\t($%02X,X) @ %02X = %04X = %02X"),	Addr, OpData[0], OpData[1],		TraceArr[OpData[0]], Operand, MidAddr, EffectiveAddr, DebugMemCPU(EffectiveAddr));	break;
-		case INY:	_stprintf(str2, _T("%04X\t%02X %02X\t%hs\t($%02X),Y = %04X @ %04X = %02X"),	Addr, OpData[0], OpData[1],		TraceArr[OpData[0]], Operand, MidAddr, EffectiveAddr, DebugMemCPU(EffectiveAddr));	break;
-		case ADR:	_stprintf(str2, _T("%04X\t%02X %02X %02X\t%hs\t$%04X"),				Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand);								break;
-		case ABS:	_stprintf(str2, _T("%04X\t%02X %02X %02X\t%hs\t$%04X = %02X"),			Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand, DebugMemCPU(Operand));					break;
-		case IND:	_stprintf(str2, _T("%04X\t%02X %02X %02X\t%hs\t($%04X) = %04X"),		Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand, EffectiveAddr);						break;
-		case ABX:	_stprintf(str2, _T("%04X\t%02X %02X %02X\t%hs\t$%04X,X @ %04X = %02X"),		Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand, EffectiveAddr, DebugMemCPU(EffectiveAddr));		break;
-		case ABY:	_stprintf(str2, _T("%04X\t%02X %02X %02X\t%hs\t$%04X,Y @ %04X = %02X"),		Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand, EffectiveAddr, DebugMemCPU(EffectiveAddr));		break;
-		default :	_tcscpy(str2, _T(""));																								break;
+			if ((OpData[0] == 0x60) || (OpData[0] == 0x40))
+				_stprintf(str2, _T("%04X\t%02X\t\t%hs\t= $%04X"),								Addr, OpData[0],						TraceArr[OpData[0]], EffectiveAddr);
+			else
+				_stprintf(str2, _T("%04X\t%02X\t\t%hs"),										Addr, OpData[0],						TraceArr[OpData[0]]);
+			break;
+		case ERR:	_stprintf(str2, _T("%04X\t%02X\t\t%hs"),									Addr, OpData[0],						TraceArr[OpData[0]]);														break;
+		case ACC:	_stprintf(str2, _T("%04X\t%02X\t\t%hs\tA"),									Addr, OpData[0],						TraceArr[OpData[0]]);														break;
+		case IMM:	_stprintf(str2, _T("%04X\t%02X %02X\t\t%hs\t#$%02X"),						Addr, OpData[0], OpData[1],				TraceArr[OpData[0]], Operand);												break;
+		case REL:	_stprintf(str2, _T("%04X\t%02X %02X\t\t%hs\t$%04X"),						Addr, OpData[0], OpData[1],				TraceArr[OpData[0]], Operand);												break;
+		case ZPG:	_stprintf(str2, _T("%04X\t%02X %02X\t\t%hs\t$%02X = #%02X"),				Addr, OpData[0], OpData[1],				TraceArr[OpData[0]], Operand, DebugMemCPU(Operand));						break;
+		case ZPX:	_stprintf(str2, _T("%04X\t%02X %02X\t\t%hs\t$%02X,X @ $%02X = #%02X"),		Addr, OpData[0], OpData[1],				TraceArr[OpData[0]], Operand, EffectiveAddr, DebugMemCPU(EffectiveAddr));	break;
+		case ZPY:	_stprintf(str2, _T("%04X\t%02X %02X\t\t%hs\t$%02X,Y @ $%02X = #%02X"),		Addr, OpData[0], OpData[1],				TraceArr[OpData[0]], Operand, EffectiveAddr, DebugMemCPU(EffectiveAddr));	break;
+		case INX:	_stprintf(str2, _T("%04X\t%02X %02X\t\t%hs\t($%02X,X) @ $%04X = #%02X"),	Addr, OpData[0], OpData[1],				TraceArr[OpData[0]], Operand, EffectiveAddr, DebugMemCPU(EffectiveAddr));	break;
+		case INY:	_stprintf(str2, _T("%04X\t%02X %02X\t\t%hs\t($%02X),Y @ $%04X = #%02X"),	Addr, OpData[0], OpData[1],				TraceArr[OpData[0]], Operand, EffectiveAddr, DebugMemCPU(EffectiveAddr));	break;
+		case ADR:
+		case ABS:
+			// TODO: look this over
+			// case ADR:	_stprintf(str2, _T("%04X\t%02X %02X %02X\t%hs\t$%04X"),				Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand);								break;
+			// case ABS:	_stprintf(str2, _T("%04X\t%02X %02X %02X\t%hs\t$%04X = %02X"),			Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand, DebugMemCPU(Operand));					break;
+			if (TraceArr[OpData[0]][1] != 'J')
+				_stprintf(str2, _T("%04X\t%02X %02X %02X\t%hs\t$%04X = #%02X"),					Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand, DebugMemCPU(Operand));
+			else
+				_stprintf(str2, _T("%04X\t%02X %02X %02X\t%hs\t$%04X"),							Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand);
+			break;
+		case IND:	_stprintf(str2, _T("%04X\t%02X %02X %02X\t%hs\t($%04X) = $%04X"),			Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand, EffectiveAddr);								break;
+		case ABX:	_stprintf(str2, _T("%04X\t%02X %02X %02X\t%hs\t$%04X,X @ $%04X = #%02X"),	Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand, EffectiveAddr, DebugMemCPU(EffectiveAddr));	break;
+		case ABY:	_stprintf(str2, _T("%04X\t%02X %02X %02X\t%hs\t$%04X,Y @ $%04X = #%02X"),	Addr, OpData[0], OpData[1], OpData[2],	TraceArr[OpData[0]], Operand, EffectiveAddr, DebugMemCPU(EffectiveAddr));	break;
+		default :	_tcscpy(str2, _T(""));																																											break;
 		}
 	}
 	return is_break;
@@ -780,50 +786,110 @@ void	AddInst (void)
 	}
 }
 
-void	DrawTile (unsigned long *dest, int PPUaddr, int palette, int pitch)
+// draw straight basic tile
+inline void	DrawTile (unsigned long *dest, unsigned int *coloring, unsigned short *PPUAddress, int palette, int pitch)
 {
-	int sy, sx;
 	int byte0, byte1, color;
-	for (sy = 0; sy < 8; sy++)
+
+	palette <<= 2;
+
+	for (int sy = 0; sy < 8; sy++)
 	{
-		byte0 = DebugMemPPU((unsigned short)(PPUaddr + sy));
-		byte1 = DebugMemPPU((unsigned short)(PPUaddr + sy + 8));
-		for (sx = 0; sx < 8; sx++)
+		byte0 = DebugMemPPU(*PPUAddress);
+		byte1 = DebugMemPPU(*PPUAddress + 8);
+
+		for (int sx = 0; sx < 8; sx++)
 		{
 			color = ((byte0 & 0x80) >> 7) | ((byte1 & 0x80) >> 6);
 			if (color)
-				color |= palette << 2;
-			color = GFX::Palette32[PPU::Palette[color]];
-			dest[sx] = color;
+				color |= palette;
+
 			byte0 <<= 1;
 			byte1 <<= 1;
+
+			if (coloring)
+				dest[sx] = coloring[color];
+			else
+				dest[sx] = GFX::Palette32[PPU::Palette[color]];
 		}
+
 		dest += pitch;
+		(*PPUAddress)++;
 	}
+
+	(*PPUAddress) += 8;
 }
 
-void	DrawTileStretch (unsigned long *dest, int PPUaddr, int palette, int width, int height, int pitch)
+// draws a tile with special attributes
+inline void	DrawTileSpecial (unsigned long *dest, unsigned int *coloring, unsigned short *PPUAddress, int palette, int pitch, bool flippedH, bool flippedV, bool transparent, int stretchSize)
 {
-	int sy, sx, py, px;
-	int byte0, byte1, color;
-	for (sy = 0; sy < 8; sy++)
+	int byte0, byte1, color, ptr;
+
+	palette <<= 2;
+	if (!stretchSize)
+		stretchSize++;
+
+	if (flippedV)
 	{
-		byte0 = DebugMemPPU((unsigned short)(PPUaddr + sy));
-		byte1 = DebugMemPPU((unsigned short)(PPUaddr + sy + 8));
-		for (sx = 0; sx < 8; sx++)
+		dest += (pitch * 8 * stretchSize - pitch);
+		pitch = -pitch;
+	}
+
+	for (int sy = 0; sy < 8; sy++)
+	{
+		byte0 = DebugMemPPU(*PPUAddress);
+		byte1 = DebugMemPPU(*PPUAddress + 8);
+
+		if (flippedH)
+			ptr = 7 * stretchSize;
+		else
+			ptr = 0;
+
+		for (int sx = 0; sx < 8; sx++)
 		{
 			color = ((byte0 & 0x80) >> 7) | ((byte1 & 0x80) >> 6);
-			if (color)
-				color |= palette << 2;
-			color = GFX::Palette32[PPU::Palette[color]];
-			for (py = 0; py < height; py++)
-				for (px = 0; px < width; px++)
-					dest[px + sx * width + py * pitch] = color;
+			if ((!color) && (transparent))
+			{
+				color = BlankColor;
+			}
+			else
+			{
+				if (color)
+					color |= palette;
+				if (coloring)
+					color = coloring[color];
+				else
+					color = GFX::Palette32[PPU::Palette[color]];
+			}
+
 			byte0 <<= 1;
 			byte1 <<= 1;
+
+			if (stretchSize != 1)
+			{
+				for (int py = 0; py < stretchSize; py++)
+				{
+					memset32(dest + ptr + py * pitch, color, stretchSize);
+				}
+			}
+			else
+			{
+				dest[ptr] = color;
+			}
+
+			if (flippedH)
+				ptr -= stretchSize;
+			else
+				ptr += stretchSize;
 		}
-		dest += pitch * height;
+
+		//for (int py = 0; py < stretchSize; py++)
+		dest += (pitch * stretchSize);
+
+		(*PPUAddress)++;
 	}
+
+	(*PPUAddress) += 8;
 }
 
 void	UpdatePPU (void)
@@ -1230,10 +1296,33 @@ void	SetDetail (int type, int num)
 {
 	if ((DetailType == type) && (DetailNum == num))
 		return;
-	DetailType = type;
-	DetailNum = num;
+
+	if (type == DEBUG_DETAIL_NONE)
+	{
+		DetailType = DetailTypeSave;
+		DetailNum = DetailNumSave;
+	}
+	else
+	{
+		DetailType = type;
+		DetailNum = num;
+	}
+
+	// TODO: not really needed
 	DetChanged = TRUE;
-	UpdatePPU();
+
+	// updating graphics, instead of just detail, may slow the emu down, if graphics have changed
+	// so use UpdateDetail instead
+	UpdateDetail();
+}
+
+void	ClearDetailSave()
+{
+	DetailTypeSave = DEBUG_DETAIL_NONE;
+	DetailNumSave = 0;
+
+	// TODO: why call SetDetail?
+	SetDetail(DEBUG_DETAIL_NONE, 0);
 }
 
 void	DumpCPU (void)
@@ -1250,14 +1339,26 @@ void	DumpCPU (void)
 	time(&aclock);
 	newtime = localtime(&aclock);
 
-	_stprintf(filename, _T("%s\\Dumps\\%s.%04i%02i%02i_%02i%02i%02i.cpumem"), DataPath, States::BaseFilename, 
+	_stprintf(filename, _T("%s\\Dumps\\%s.%04i%02i%02i_%02i%02i%02i.cpuprgmem"), DataPath, States::BaseFilename,
 		newtime->tm_year + 1900, newtime->tm_mon + 1, newtime->tm_mday, newtime->tm_hour, newtime->tm_min, newtime->tm_sec);
+
 	out = _tfopen(filename, _T("wb"));
-	fwrite(CPU::RAM, 1, 0x800, out);
-	for (i = 4; i < 16; i++)
-		if (CPU::PRGPointer[i])
-			fwrite(CPU::PRGPointer[i], 1, 0x1000, out);
-	fclose(out);
+
+	if (out != NULL) {
+		fwrite(CPU::RAM, 1, 0x800, out);
+
+		for (i = 4; i < 16; i++)
+		{
+			if (CPU::PRGPointer[i])
+				fwrite(CPU::PRGPointer[i], 1, 0x1000, out);
+		}
+
+		fclose(out);
+	}
+	else
+	{
+		MessageBox(hMainWnd, _T("Unable to open Dump file!"), _T("Nintendulator"), MB_OK | MB_ICONERROR);
+	}
 }
 
 void	DumpPPU (void)
@@ -1274,316 +1375,165 @@ void	DumpPPU (void)
 	time(&aclock);
 	newtime = localtime(&aclock);
 
-	_stprintf(filename, _T("%s\\Dumps\\%s.%04i%02i%02i_%02i%02i%02i.ppumem"), DataPath, States::BaseFilename, 
+	_stprintf(filename, _T("%s\\Dumps\\%s.%04i%02i%02i_%02i%02i%02i.ppumem"), DataPath, States::BaseFilename,
 		newtime->tm_year + 1900, newtime->tm_mon + 1, newtime->tm_mday, newtime->tm_hour, newtime->tm_min, newtime->tm_sec);
+
 	out = _tfopen(filename, _T("wb"));
-	for (i = 0; i < 12; i++)
-		fwrite(PPU::CHRPointer[i], 1, 0x400, out);
-	fwrite(PPU::Sprite, 1, 0x100, out);
-	fwrite(PPU::Palette, 1, 0x20, out);
-	fclose(out);
-}
 
-void	CacheBreakpoints (void)
-{
-	int i;
-	struct tBreakPoint *bp;
-	ZeroMemory(BPcache, sizeof(BPcache));
-	for (bp = BreakPoints::list; bp != NULL; bp = bp->next)
-	{
-		if (!bp->enabled)
-			continue;
-		if (bp->type & (DEBUG_BREAK_EXEC | DEBUG_BREAK_READ | DEBUG_BREAK_WRITE))
-		{
-			for (i = bp->addr_start; i <= bp->addr_end; i++)
-				BPcache[i] |= bp->type;
-		}
-		if (bp->type & DEBUG_BREAK_OPCODE)
-			BPcache[0x10000 | bp->opcode] |= bp->type;
-		if (bp->type & (DEBUG_BREAK_NMI | DEBUG_BREAK_IRQ | DEBUG_BREAK_BRK))
-			BPcache[0x10100] |= bp->type;
-	}
-}
+	if (out != NULL) {
+		for (i = 0; i < 12; i++)
+			fwrite(PPU::CHRPointer[i], 1, 0x400, out);
 
-struct tBreakPoint *GetBreakpoint (HWND hwndDlg, int *_line)
-{
-	struct tBreakPoint *bp;
-	TCHAR *str;
-	int line, len;
+		fwrite(PPU::Sprite, 1, 0x100, out);
+		fwrite(PPU::Palette, 1, 0x20, out);
 
-	line = SendDlgItemMessage(hwndDlg, IDC_DEBUG_BREAK_LIST, LB_GETCURSEL, 0, 0);
-	if (line == -1)
-	{
-		EnableWindow(GetDlgItem(hwndDlg, IDC_DEBUG_BREAK_EDIT), FALSE);
-		EnableWindow(GetDlgItem(hwndDlg, IDC_DEBUG_BREAK_DELETE), FALSE);
-		return NULL;
-	}
-
-	EnableWindow(GetDlgItem(hwndDlg, IDC_DEBUG_BREAK_EDIT), TRUE);
-	EnableWindow(GetDlgItem(hwndDlg, IDC_DEBUG_BREAK_DELETE), TRUE);
-
-	len = SendDlgItemMessage(hwndDlg, IDC_DEBUG_BREAK_LIST, LB_GETTEXTLEN, line, 0);
-	str = new TCHAR[len + 1];
-	SendDlgItemMessage(hwndDlg, IDC_DEBUG_BREAK_LIST, LB_GETTEXT, line, (LPARAM)str);
-
-	// try to find it in the breakpoint list
-	bp = BreakPoints::list;
-	while (bp != NULL)
-	{
-		if (!_tcscmp(bp->desc, str))
-			break;
-		bp = bp->next;
-	}
-	delete[] str;
-	if (_line != NULL)
-		*_line = line;
-	return bp;
-}
-
-void	SetBreakpoint (HWND hwndDlg, struct tBreakPoint *bp)
-{
-	int line;
-	if (bp == NULL)
-	{
-		SendDlgItemMessage(hwndDlg, IDC_DEBUG_BREAK_LIST, LB_SETCURSEL, (WPARAM)-1, 0);
-		EnableWindow(GetDlgItem(hwndDlg, IDC_DEBUG_BREAK_EDIT), FALSE);
-		EnableWindow(GetDlgItem(hwndDlg, IDC_DEBUG_BREAK_DELETE), FALSE);
-		return;
-	}
-
-	line = SendDlgItemMessage(hwndDlg, IDC_DEBUG_BREAK_LIST, LB_FINDSTRINGEXACT, (WPARAM)-1, (LPARAM)bp->desc);
-	SendDlgItemMessage(hwndDlg, IDC_DEBUG_BREAK_LIST, LB_SETCURSEL, line, 0);
-	if (line == -1)
-	{
-		EnableWindow(GetDlgItem(hwndDlg, IDC_DEBUG_BREAK_EDIT), FALSE);
-		EnableWindow(GetDlgItem(hwndDlg, IDC_DEBUG_BREAK_DELETE), FALSE);
+		fclose(out);
 	}
 	else
 	{
-		EnableWindow(GetDlgItem(hwndDlg, IDC_DEBUG_BREAK_EDIT), TRUE);
-		EnableWindow(GetDlgItem(hwndDlg, IDC_DEBUG_BREAK_DELETE), TRUE);
+		MessageBox(hMainWnd, _T("Unable to open Dump file!"), _T("Nintendulator"), MB_OK | MB_ICONERROR);
 	}
 }
 
+// TODO: support NMI, IRQ, BRK
 INT_PTR CALLBACK BreakpointProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	int wmId, wmEvent;
-	TCHAR tpc[8];
-	struct tBreakPoint *bp = (struct tBreakPoint *)GetWindowLongPtr(hwndDlg, GWLP_USERDATA);
-	int line, len, Addr;
-	TCHAR *str;
-
-	int addr1, addr2, opcode, type, enabled;
+	TCHAR tpc[10];
+	static sBreakpoint *bp;
 
 	switch (uMsg)
 	{
 	case WM_INITDIALOG:
-		SetWindowLongPtr(hwndDlg, GWLP_USERDATA, lParam);
-		bp = (struct tBreakPoint *)lParam;
-		if (bp == (struct tBreakPoint *)(size_t)0xFFFFFFFF)
-		{
-			bp = NULL;
-			SetWindowLongPtr(hwndDlg, GWLP_USERDATA, NULL);
-			CheckRadioButton(hwndDlg, IDC_BREAK_EXEC, IDC_BREAK_BRK, IDC_BREAK_EXEC);
+		bp = (sBreakpoint *)lParam;
 
-			line = SendDlgItemMessage(CPUWnd, IDC_DEBUG_TRACE_LIST, LB_GETCURSEL, 0, 0);
-			if (line == -1)
-				break;
-			len = SendDlgItemMessage(CPUWnd, IDC_DEBUG_TRACE_LIST, LB_GETTEXTLEN, line, 0);
-			str = new TCHAR[len + 1];
-			SendDlgItemMessage(CPUWnd, IDC_DEBUG_TRACE_LIST, LB_GETTEXT, line, (LPARAM)str);
-			Addr = _tcstol(str, NULL, 16);
-			_stprintf(tpc, _T("%04X"), Addr);
-			SetDlgItemText(hwndDlg, IDC_BREAK_ADDR1, tpc);
-			delete[] str;
-
-			SetDlgItemText(hwndDlg, IDC_BREAK_ADDR2, _T(""));
-			SetDlgItemText(hwndDlg, IDC_BREAK_OPNUM, _T("00"));
-			CheckDlgButton(hwndDlg, IDC_BREAK_ENABLED, BST_CHECKED);
-			EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_ADDR1), TRUE);
-			EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_ADDR2), TRUE);
-			EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_OPNUM), FALSE);
-		}
-		else if (bp != NULL)
+		if (bp)
 		{
-			switch (bp->type)
+			//load old breakpoint
+
+			switch(bp->type)
 			{
-			case DEBUG_BREAK_EXEC:
-				CheckRadioButton(hwndDlg, IDC_BREAK_EXEC, IDC_BREAK_BRK, IDC_BREAK_EXEC);
+			case 'F':
+				CheckDlgButton(hwndDlg, IDC_DEBUG_ADD_FILE, BST_CHECKED);
 				break;
-			case DEBUG_BREAK_READ:
-				CheckRadioButton(hwndDlg, IDC_BREAK_EXEC, IDC_BREAK_BRK, IDC_BREAK_READ);
+			case 'C':
+				CheckDlgButton(hwndDlg, IDC_DEBUG_ADD_CPU, BST_CHECKED);
 				break;
-			case DEBUG_BREAK_WRITE:
-				CheckRadioButton(hwndDlg, IDC_BREAK_EXEC, IDC_BREAK_BRK, IDC_BREAK_WRITE);
+			case 'P':
+				CheckDlgButton(hwndDlg, IDC_DEBUG_ADD_PPU, BST_CHECKED);
 				break;
-			case DEBUG_BREAK_READ | DEBUG_BREAK_WRITE:
-				CheckRadioButton(hwndDlg, IDC_BREAK_EXEC, IDC_BREAK_BRK, IDC_BREAK_ACCESS);
-				break;
-			case DEBUG_BREAK_OPCODE:
-				CheckRadioButton(hwndDlg, IDC_BREAK_EXEC, IDC_BREAK_BRK, IDC_BREAK_OPCODE);
-				break;
-			case DEBUG_BREAK_NMI:
-				CheckRadioButton(hwndDlg, IDC_BREAK_EXEC, IDC_BREAK_BRK, IDC_BREAK_NMI);
-				break;
-			case DEBUG_BREAK_IRQ:
-				CheckRadioButton(hwndDlg, IDC_BREAK_EXEC, IDC_BREAK_BRK, IDC_BREAK_IRQ);
-				break;
-			case DEBUG_BREAK_BRK:
-				CheckRadioButton(hwndDlg, IDC_BREAK_EXEC, IDC_BREAK_BRK, IDC_BREAK_BRK);
+			case 'S':
+				CheckDlgButton(hwndDlg, IDC_DEBUG_ADD_SPRITE, BST_CHECKED);
 				break;
 			}
-			switch (bp->type)
+
+			if (bp->type != 'S')
 			{
-			case DEBUG_BREAK_EXEC:
-			case DEBUG_BREAK_READ:
-			case DEBUG_BREAK_WRITE:
-			case DEBUG_BREAK_READ | DEBUG_BREAK_WRITE:
 				_stprintf(tpc, _T("%04X"), bp->addr_start);
-				SetDlgItemText(hwndDlg, IDC_BREAK_ADDR1, tpc);
+				SetDlgItemText(hwndDlg, IDC_DEBUG_ADD_ADR1, tpc);
+
 				if (bp->addr_start == bp->addr_end)
-					SetDlgItemText(hwndDlg, IDC_BREAK_ADDR2, _T(""));
+				{
+					tpc[0] = 0;
+				}
 				else
 				{
 					_stprintf(tpc, _T("%04X"), bp->addr_end);
-					SetDlgItemText(hwndDlg, IDC_BREAK_ADDR2, tpc);
 				}
-				SetDlgItemText(hwndDlg, IDC_BREAK_OPNUM, _T("00"));
-				EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_ADDR1), TRUE);
-				EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_ADDR2), TRUE);
-				EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_OPNUM), FALSE);
-				break;
-			case DEBUG_BREAK_OPCODE:
-				SetDlgItemText(hwndDlg, IDC_BREAK_ADDR1, _T("0000"));
-				SetDlgItemText(hwndDlg, IDC_BREAK_ADDR2, _T(""));
-				_stprintf(tpc, _T("%02X"), bp->opcode);
-				SetDlgItemText(hwndDlg, IDC_BREAK_OPNUM, tpc);
-				EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_ADDR1), FALSE);
-				EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_ADDR2), FALSE);
-				EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_OPNUM), TRUE);
-				break;
-			case DEBUG_BREAK_NMI:
-			case DEBUG_BREAK_IRQ:
-			case DEBUG_BREAK_BRK:
-				SetDlgItemText(hwndDlg, IDC_BREAK_ADDR1, _T("0000"));
-				SetDlgItemText(hwndDlg, IDC_BREAK_ADDR2, _T(""));
-				SetDlgItemText(hwndDlg, IDC_BREAK_OPNUM, _T("00"));
-				EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_ADDR1), FALSE);
-				EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_ADDR2), FALSE);
-				EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_OPNUM), FALSE);
-				break;
+
+				SetDlgItemText(hwndDlg, IDC_DEBUG_ADD_ADR2, tpc);
 			}
-			CheckDlgButton(hwndDlg, IDC_BREAK_ENABLED, (bp->enabled) ? BST_CHECKED : BST_UNCHECKED);
+
+			CheckDlgButton(hwndDlg, IDC_DEBUG_ADD_READ, (bp->flag & DEBUG_BREAK_READ ? BST_CHECKED : BST_UNCHECKED));
+			CheckDlgButton(hwndDlg, IDC_DEBUG_ADD_WRITE, (bp->flag & DEBUG_BREAK_WRITE ? BST_CHECKED : BST_UNCHECKED));
+			CheckDlgButton(hwndDlg, IDC_DEBUG_ADD_EXEC, (bp->flag & DEBUG_BREAK_EXEC ? BST_CHECKED : BST_UNCHECKED));
 		}
 		else
 		{
-			CheckRadioButton(hwndDlg, IDC_BREAK_EXEC, IDC_BREAK_BRK, IDC_BREAK_EXEC);
-			SetDlgItemText(hwndDlg, IDC_BREAK_ADDR1, _T("0000"));
-			SetDlgItemText(hwndDlg, IDC_BREAK_ADDR2, _T(""));
-			SetDlgItemText(hwndDlg, IDC_BREAK_OPNUM, _T("00"));
-			CheckDlgButton(hwndDlg, IDC_BREAK_ENABLED, BST_CHECKED);
-			EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_ADDR1), TRUE);
-			EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_ADDR2), TRUE);
-			EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_OPNUM), FALSE);
+			CheckDlgButton(hwndDlg, IDC_DEBUG_ADD_CPU, BST_CHECKED);
 		}
-		SetFocus(GetDlgItem(hwndDlg, IDC_BREAK_ADDR1));
-		SendDlgItemMessage(hwndDlg, IDC_BREAK_ADDR1, EM_SETSEL, 0, -1);
+
+		SetFocus(GetDlgItem(hwndDlg, IDC_DEBUG_ADD_ADR1));
+		SendDlgItemMessage(hwndDlg, IDC_DEBUG_ADD_ADR1, EM_SETSEL, 0, -1);
 		return FALSE;
 	case WM_COMMAND:
-		wmId    = LOWORD(wParam); 
-		wmEvent = HIWORD(wParam); 
-
-		switch (wmId)
+		switch (LOWORD(wParam))
 		{
-		case IDC_BREAK_EXEC:
-		case IDC_BREAK_READ:
-		case IDC_BREAK_WRITE:
-		case IDC_BREAK_ACCESS:
-			EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_ADDR1), TRUE);
-			EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_ADDR2), TRUE);
-			EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_OPNUM), FALSE);
-			return TRUE;
-		case IDC_BREAK_OPCODE:
-			EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_ADDR1), FALSE);
-			EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_ADDR2), FALSE);
-			EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_OPNUM), TRUE);
-			return TRUE;
-		case IDC_BREAK_NMI:
-		case IDC_BREAK_IRQ:
-		case IDC_BREAK_BRK:
-			EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_ADDR1), FALSE);
-			EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_ADDR2), FALSE);
-			EnableWindow(GetDlgItem(hwndDlg, IDC_BREAK_OPNUM), FALSE);
-			return TRUE;
-
 		case IDOK:
-			GetDlgItemText(hwndDlg, IDC_BREAK_ADDR1, tpc, 5);
-			addr1 = _tcstol(tpc, NULL, 16);
-			GetDlgItemText(hwndDlg, IDC_BREAK_ADDR2, tpc, 5);
-			addr2 = _tcstol(tpc, NULL, 16);
-			if (!_tcslen(tpc))
-				addr2 = addr1;
-			GetDlgItemText(hwndDlg, IDC_BREAK_OPNUM, tpc, 3);
-			opcode = _tcstol(tpc, NULL, 16);
-			enabled = (IsDlgButtonChecked(hwndDlg, IDC_BREAK_ENABLED) == BST_CHECKED);
+			char type;
 
-			type = 0;
-			if (IsDlgButtonChecked(hwndDlg, IDC_BREAK_EXEC) == BST_CHECKED)
-				type = DEBUG_BREAK_EXEC;
-			if (IsDlgButtonChecked(hwndDlg, IDC_BREAK_READ) == BST_CHECKED)
-				type = DEBUG_BREAK_READ;
-			if (IsDlgButtonChecked(hwndDlg, IDC_BREAK_WRITE) == BST_CHECKED)
-				type = DEBUG_BREAK_WRITE;
-			if (IsDlgButtonChecked(hwndDlg, IDC_BREAK_ACCESS) == BST_CHECKED)
-				type = DEBUG_BREAK_READ | DEBUG_BREAK_WRITE;
-			if (IsDlgButtonChecked(hwndDlg, IDC_BREAK_OPCODE) == BST_CHECKED)
-				type = DEBUG_BREAK_OPCODE;
-			if (IsDlgButtonChecked(hwndDlg, IDC_BREAK_NMI) == BST_CHECKED)
-				type = DEBUG_BREAK_NMI;
-			if (IsDlgButtonChecked(hwndDlg, IDC_BREAK_IRQ) == BST_CHECKED)
-				type = DEBUG_BREAK_IRQ;
-			if (IsDlgButtonChecked(hwndDlg, IDC_BREAK_BRK) == BST_CHECKED)
-				type = DEBUG_BREAK_BRK;
+			if (IsDlgButtonChecked(hwndDlg, IDC_DEBUG_ADD_FILE) == BST_CHECKED)
+				type = 'F';
+			else if (IsDlgButtonChecked(hwndDlg, IDC_DEBUG_ADD_CPU) == BST_CHECKED)
+				type = 'C';
+			else if (IsDlgButtonChecked(hwndDlg, IDC_DEBUG_ADD_PPU) == BST_CHECKED)
+				type = 'P';
+			else if (IsDlgButtonChecked(hwndDlg, IDC_DEBUG_ADD_SPRITE) == BST_CHECKED)
+				type = 'S';
+			else
+				break;
 
-			if (type & (DEBUG_BREAK_EXEC | DEBUG_BREAK_READ | DEBUG_BREAK_WRITE))
+			int startAddress, endAddress;
+			char flag;
+
+			if (type != 'S')
 			{
-				if ((addr1 < 0x0000) || (addr1 > 0xFFFF) ||
-					(addr2 < 0x0000) || (addr2 > 0xFFFF) ||
-					(addr1 > addr2))
+				TCHAR *tpcEnd;
+
+				GetDlgItemText(hwndDlg, IDC_DEBUG_ADD_ADR1, tpc, sizeof(tpc));
+				if (!tpc[0])
+					break;
+
+				startAddress = _tcstol(tpc, &tpcEnd, 16);
+				if ((tpcEnd == NULL) || (tpcEnd == tpc))
 				{
-					MessageBox(hwndDlg, _T("Invalid address range specified!"), _T("Breakpoint"), MB_ICONERROR);
+					// bad first address
+					SetFocus(GetDlgItem(hwndDlg, IDC_DEBUG_ADD_ADR1));
+					SendDlgItemMessage(hwndDlg, IDC_DEBUG_ADD_ADR1, EM_SETSEL, 0, -1);
 					break;
 				}
-			}
-			if (type & (DEBUG_BREAK_OPCODE))
-			{
-				if ((opcode < 0x00) || (opcode > 0xFF))
+
+				GetDlgItemText(hwndDlg, IDC_DEBUG_ADD_ADR2, tpc, sizeof(tpc));
+				if (!tpc[0])
 				{
-					MessageBox(hwndDlg, _T("Invalid opcode specified!"), _T("Breakpoint"), MB_ICONERROR);
-					break;
+					endAddress = startAddress;
 				}
-			}
-			if (bp == NULL)
-			{
-				bp = new struct tBreakPoint;
-				if (bp == NULL)
+				else
 				{
-					MessageBox(hwndDlg, _T("Failed to add breakpoint!"), _T("Breakpoint"), MB_ICONERROR);
-					EndDialog(hwndDlg, (INT_PTR)NULL);
-					break;
+					endAddress = _tcstol(tpc, &tpcEnd, 16);
+					if ((tpcEnd == NULL) || (tpcEnd == tpc) || (endAddress < startAddress))
+					{
+						// bad second address
+						SetFocus(GetDlgItem(hwndDlg, IDC_DEBUG_ADD_ADR2));
+						SendDlgItemMessage(hwndDlg, IDC_DEBUG_ADD_ADR2, EM_SETSEL, 0, -1);
+						break;
+					}
 				}
-				bp->next = BreakPoints::list;
-				bp->prev = NULL;
-				if (bp->next != NULL)
-					bp->next->prev = bp;
-				BreakPoints::list = bp;
+
+				flag = 0;
+
+				if (IsDlgButtonChecked(hwndDlg, IDC_DEBUG_ADD_READ) == BST_CHECKED)
+					flag |= DEBUG_BREAK_READ;
+				if (IsDlgButtonChecked(hwndDlg, IDC_DEBUG_ADD_WRITE) == BST_CHECKED)
+					flag |= DEBUG_BREAK_WRITE;
+				if (IsDlgButtonChecked(hwndDlg, IDC_DEBUG_ADD_EXEC) == BST_CHECKED)
+					flag |= DEBUG_BREAK_EXEC;
+			} else {
+				startAddress = endAddress = 0x4014;
+				flag = DEBUG_BREAK_WRITE;
 			}
-			bp->type = (unsigned char)type;
-			bp->opcode = (unsigned char)opcode;
-			bp->enabled = (unsigned char)enabled;
-			bp->addr_start = (unsigned short)addr1;
-			bp->addr_end = (unsigned short)addr2;
-			bp->updateDescription();
+
+			if (!bp)
+			{
+				bp = new sBreakpoint;
+				bp->enabled = true;
+				bp->next = bp->prev = NULL;
+			}
+
+			bp->type = type;
+			bp->addr_start = startAddress;
+			bp->addr_end = endAddress;
+			bp->flag = flag;
+
 			EndDialog(hwndDlg, (INT_PTR)bp);
 			return TRUE;
 
